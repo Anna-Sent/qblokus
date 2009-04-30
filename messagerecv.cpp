@@ -234,7 +234,8 @@ ConnectionAcceptedMessage::ConnectionAcceptedMessage(int errorCode) {
 }
 
 QByteArray ConnectionAcceptedMessage::serialize() const {
-	QByteArray result = QByteArray::fromRawData((const char*)errorCode, sizeof(int));
+	QByteArray result = QByteArray::fromRawData((const char*)(&errorCode), sizeof(int));
+	std::cerr << "created: " << errorCode << endl;
 	return header.serialize().append(result);
 }
 
@@ -242,4 +243,5 @@ void ConnectionAcceptedMessage::fill(const QByteArray& buffer) {
 	const char* data = buffer.data();
 	//errorCode = *((int*)data);
 	::bcopy(data, (void*)(&errorCode), sizeof(int));
+	std::cerr << "accepted: " << errorCode << endl;
 }
