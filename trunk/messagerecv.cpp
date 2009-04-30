@@ -241,5 +241,5 @@ QByteArray ConnectionAcceptedMessage::serialize() const {
 void ConnectionAcceptedMessage::fill(const QByteArray& buffer) {
 	const char* data = buffer.data();
 	//errorCode = *((int*)data);
-	::bcopy(data, (void*)errorCode, sizeof(int));
+	::bcopy(data, (void*)(&errorCode), sizeof(int));
 }
