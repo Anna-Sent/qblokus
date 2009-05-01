@@ -10,11 +10,14 @@ OptDialog::OptDialog(App* app) {
 	this->app = app;
 	connect(pbSearch, SIGNAL(clicked()), this, SLOT(searchBtnClicked()));
 	connect(pbConnect, SIGNAL(clicked()), this, SLOT(connectBtnClicked()));
+	connect(cbCreateServer, SIGNAL(toggled(bool)), this, SLOT(toggled(bool)));
 }
 
 App::App(QWidget *parent) {
 	setupUi(this);
 	game = new Game(this);
+	timer.setInterval(5000);
+	connect(&timer, SIGNAL(timeout()), this, SLOT(ping()));
 	//qRegisterMetaType<QAbstractSocket::SocketError>("QAbstractSocket::SocketError");
 	TCPSocket *clientConnection = new TCPSocket;
 	MessageReceiver *local_receiver=new MessageReceiver(clientConnection);
@@ -23,6 +26,7 @@ App::App(QWidget *parent) {
 	connect(local_receiver, SIGNAL(serverReadyMessageReceive(ServerReadyMessage)), this, SLOT(localServerReadyMessageReceive(ServerReadyMessage)));
 	connect(local_receiver, SIGNAL(clientConnectMessageReceive(ClientConnectMessage)), this, SLOT(localClientConnectMessageReceive(ClientConnectMessage)));
 	connect(local_receiver, SIGNAL(connectionAcceptedMessageReceive(ConnectionAcceptedMessage)), this, SLOT(localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)));
+	connect(local_receiver, SIGNAL(pingMessageReceive(PingMessage)), this, SLOT(localPingMessageReceive(PingMessage)));
 	connect(clientConnection, SIGNAL(connected()), this, SLOT(connected()));
 	connect(clientConnection, SIGNAL(disconnected()), this, SLOT(disconnected()));
 	connect(clientConnection, SIGNAL(error()), this, SLOT(error()));
@@ -33,8 +37,40 @@ App::App(QWidget *parent) {
 	connect(actionDisconnectFromServer, SIGNAL(activated()), this, SLOT(disconnectFromServer()));
 	connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(sendMessage()));
 	connect(lineEdit, SIGNAL(returnPressed()), lineEdit, SLOT(clear()));
+	connect(actionReconnectToServer, SIGNAL(activated()), this, SLOT(reconnectToServer()));
 	dialog = new OptDialog(this);
 	dialog->show();
+}
+
+void App::ping() {
+	for (int i=0; i < clients.size(); ++i) {
+		PingMessage msg;
+		msg.send(clients[i]->socket);
+		cerr << "send ping" << endl;
+		//QTime cur = QTime::currentTime();
+		QTime last = clients[i]->lastpingtime;
+		int elapsed = last.elapsed();
+		cerr << "elapsed " << elapsed << endl;
+		if (elapsed > 15000)
+			clients[i]->socket->close();// client shut down
+		//qint64 delta = last.msec() + last.second()*1000 + last.minute()*1000*60 + last.hour()
+	}
+}
+
+void App::localPingMessageReceive(PingMessage msg) {
+	msg.send(localClient.socket);
+	cerr << "get ping" << endl;
+}
+
+void App::remotePingMessageReceive(PingMessage) {
+	MessageReceiver *r = dynamic_cast<MessageReceiver*>(sender());
+	if (r) {
+		int j;
+		for (j = 0; j< clients.size() && r!=clients[j]->receiver; ++j) {}
+		if (j != clients.size()) {
+			clients[j]->lastpingtime.start();// = QTime::currentTime();
+		}
+	}
 }
 
 App::~App() {
@@ -42,11 +78,51 @@ App::~App() {
 	//delete local_receiver;
 	//clientConnection.close();
 	serverConnection.close();
+	timer.stop();
 	for (int j=0;j<clients.size();delete clients[j++]) {}
 }
 
 void App::exit() {
 	std::exit(0);
+}
+
+void OptDialog::toggled(bool checked) {
+	if (checked)
+		pbConnect->setText("Create server and connect to it");
+	else
+		pbConnect->setText("Connect to server");
+}
+
+void App::reconnectToServer() {
+	// disconnect
+	bool isServer = false;
+	QString hostname = localClient.socket->getHostname();
+	quint16 port = localClient.socket->getPort();
+	localClient.socket->disconnectFromHost();
+	if (serverConnection.isListening()) {
+		serverConnection.close();
+		timer.stop();
+		while (clients.size()>0) {
+			Client *client = clients[0];
+			clients.removeAt(0);
+			client->socket->close();
+			client->deleteLater();
+		}
+		clients.clear();
+		isServer = true;
+	}
+	// connect
+	if (isServer) {
+		bool listening = serverConnection.listen(port);
+		if (listening) {
+			localClient.socket->connectToHost(hostname, port);
+			timer.start();
+		} else {
+			QMessageBox::critical(this, "Error", serverConnection.errorString());
+			return;
+		}
+	}
+	localClient.socket->connectToHost(hostname, port);
 }
 
 void App::chatMessageReceive(ChatMessage msg) {
@@ -102,7 +178,7 @@ void App::disconnectFromServer() {
 	localClient.socket->disconnectFromHost();
 	if (serverConnection.isListening()) {
 		serverConnection.close();
-		
+		timer.stop();
 		while (clients.size()>0) {
 			Client *client = clients[0];
 			clients.removeAt(0);
@@ -156,6 +232,7 @@ void OptDialog::connectBtnClicked() {
 		int port = sbPort->value();
 		int clientscount = sbClientsCount->value();
 		bool listening = app->serverConnection.listen(port);
+		app->timer.start();
 		if (listening) {
 			close();
 			app->show();
@@ -193,7 +270,7 @@ void App::newConnection() {
 		MessageReceiver *rr = new MessageReceiver(s);
 		connect(rr, SIGNAL(getMessage(QByteArray)), this, SLOT(getMessageFromOtherClient(QByteArray)));
 		connect(rr, SIGNAL(clientConnectMessageReceive(ClientConnectMessage)), this, SLOT(remoteClientConnectMessageReceive(ClientConnectMessage)));
-
+		connect(rr, SIGNAL(pingMessageReceive(PingMessage)), this, SLOT(remotePingMessageReceive(PingMessage)));
 		//remote_receivers.append(rr);
 		connect(s, SIGNAL(disconnected()), this, SLOT(otherClientDisconnected()));
 		connect(s, SIGNAL(error()), this, SLOT(errorFromOtherClient()));
@@ -231,14 +308,14 @@ void App::otherClientDisconnected() {
 
 void App::disconnected() {
 	textEdit->append("Disconnected");
+	listWidget->clear();
 }
 
 void App::error() {
 	cerr <<"enter error"<<endl;
 	textEdit->append("local error "+localClient.socket->errorString());
 	localClient.socket->close();
-	if (serverConnection.isListening()) serverConnection.close();
-	//listWidget->clear();
+	if (serverConnection.isListening()) { serverConnection.close(); timer.stop(); }
 	cerr <<"exit error"<<endl;
 }
 

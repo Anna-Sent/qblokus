@@ -7,7 +7,7 @@
 
 enum MessageType { mtHeader, mtChat, mtPlayersList,
 	mtClientConnect, mtClientDisconnect, mtServerReady,
-	mtConnectionAccepted };
+	mtConnectionAccepted, mtPing };
 
 class TCPSocket;
 
@@ -38,6 +38,8 @@ class ComplexMessage : public Message {
 	public:
 //		ComplexMessage(const MessageHeader& header) {this->header=header;}
 		qint64 getLength() const {return header.len;}
+		QByteArray serialize() const { return header.serialize(); }
+		void fill(const QByteArray&) {}
 };
 
 class ChatMessage : public ComplexMessage {
@@ -92,9 +94,14 @@ class ServerReadyMessage : public ComplexMessage {
 	private:
 	public:
 		ServerReadyMessage(const MessageHeader& header) {this->header=header;}
-		ServerReadyMessage();
-		QByteArray serialize() const;
-		void fill(const QByteArray&);
+		ServerReadyMessage() { header.len = 0; header.type = mtServerReady;}
+};
+
+class PingMessage : public ComplexMessage {
+	private:
+	public:
+		PingMessage(const MessageHeader& header) {this->header=header;}
+		PingMessage() { header.len = 0; header.type = mtPing;}
 };
 
 class ConnectionAcceptedMessage : public ComplexMessage {
@@ -127,4 +134,5 @@ class MessageReceiver : public QObject {
 		void getMessage(QByteArray);
 		void serverReadyMessageReceive(ServerReadyMessage);
 		void connectionAcceptedMessageReceive(ConnectionAcceptedMessage);
+		void pingMessageReceive(PingMessage);
 };
