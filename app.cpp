@@ -15,17 +15,19 @@ OptDialog::OptDialog(App* app) {
 App::App(QWidget *parent) {
 	setupUi(this);
 	//qRegisterMetaType<QAbstractSocket::SocketError>("QAbstractSocket::SocketError");
-	local_receiver=new MessageReceiver(&clientConnection);
+	MessageReceiver *local_receiver=new MessageReceiver(&clientConnection);
 	connect(local_receiver, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(chatMessageReceive(ChatMessage)));
 	connect(local_receiver, SIGNAL(playersListMessageReceive(PlayersListMessage)), this, SLOT(playersListMessageReceive(PlayersListMessage)));
 	connect(local_receiver, SIGNAL(serverReadyMessageReceive(ServerReadyMessage)), this, SLOT(localServerReadyMessageReceive(ServerReadyMessage)));
 	connect(local_receiver, SIGNAL(clientConnectMessageReceive(ClientConnectMessage)), this, SLOT(localClientConnectMessageReceive(ClientConnectMessage)));
 	connect(local_receiver, SIGNAL(connectionAcceptedMessageReceive(ConnectionAcceptedMessage)), this, SLOT(localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)));
-
-	connect(&clientConnection, SIGNAL(connected()), this, SLOT(connected()));
-	connect(&clientConnection, SIGNAL(disconnected()), this, SLOT(disconnected()));
-	connect(&clientConnection, SIGNAL(error()), this, SLOT(error()));
-	connect(&serverConnection, SIGNAL(newConnection()), this, SLOT(newConnection()));
+	TCPSocket *clientConnection = new TCPSocket;
+	connect(clientConnection, SIGNAL(connected()), this, SLOT(connected()));
+	connect(clientConnection, SIGNAL(disconnected()), this, SLOT(disconnected()));
+	connect(clientConnection, SIGNAL(error()), this, SLOT(error()));
+	connect(serverConnection, SIGNAL(newConnection()), this, SLOT(newConnection()));
+	localClient.socket = clientConnection;
+	localClient.receiver = local_receiver;
 	connect(a_exit, SIGNAL(activated()), this, SLOT(exit()));
 	connect(actionDisconnectFromServer, SIGNAL(activated()), this, SLOT(disconnectFromServer()));
 	connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(sendMessage()));
@@ -36,8 +38,8 @@ App::App(QWidget *parent) {
 
 App::~App() {
 	delete dialog;
-	delete local_receiver;
-	clientConnection.close();
+	//delete local_receiver;
+	//clientConnection.close();
 	serverConnection.close();
 	for (int j=0;j<clients.size();delete clients[j++]) {}
 }
@@ -62,11 +64,11 @@ void App::playersListMessageReceive(PlayersListMessage msg) {
 }
 
 void App::sendMessage() {
-	if (clientConnection.isConnected()) {
+	if (localClient.socket->isConnected()) {
 		QString text = lineEdit->text();
 		if (text != "") {
-			ChatMessage msg(localClientName,text,localClientColor);
-			msg.send(&clientConnection);
+			ChatMessage msg(localClient.info.name,text,localClient.info.color);
+			msg.send(localClient.socket);
 		}
 	} else
 		textEdit->append(QString::fromUtf8("Подключение утеряно"));
@@ -82,14 +84,15 @@ void App::getMessageFromOtherClient(QByteArray data) {
 void App::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage msg) {
 	cerr<<"get conn acc"<<endl;switch (msg.getCode()) {
 		case 0: cerr << "accepted" << endl; break;
-		case 1: cerr << "bad color" << endl; break;
-		case 2: cerr << "bad name" << endl; break;
-		default: cerr << "unknown error code " << /*msg.getCode()<<*/ endl;
+		case 1: //cerr << "bad color" << endl; break;
+		case 2: cerr << "bad "<<(msg.getCode()==2?"name":"color") << endl;// break;
+		localClient.socket->close();//disconnectFromHost();
+//		default: cerr << "unknown error code " << /*msg.getCode()<<*/ endl;
 	}
 }
 
 void App::disconnectFromServer() {
-	clientConnection.disconnectFromHost();
+	localClient.socket->disconnectFromHost();
 	if (serverConnection.isListening()) {
 		serverConnection.close();
 		for (int j=0;j<clients.size();++j) {
@@ -115,17 +118,20 @@ void OptDialog::searchBtnClicked() {
 
 void OptDialog::connectBtnClicked() {
 	switch (comboBox->currentIndex()) {
-		case 0: app->localClientColor = Qt::red; break;
-		case 1: app->localClientColor = Qt::yellow; break;
-		case 2: app->localClientColor = Qt::green; break;
-		case 3: app->localClientColor = Qt::blue; break;
+		case 0: app->localClient.info.color = Qt::red; break;
+		case 1: app->localClient.info.color = Qt::yellow; break;
+		case 2: app->localClient.info.color = Qt::green; break;
+		case 3: app->localClient.info.color = Qt::blue; break;
 		default: QMessageBox::warning(this, "Error", "Incorrect color"); return;
 	}
-	app->localClientName = leNickname->text();
-	if (app->localClientName=="") {
+	app->localClient.info.name = leNickname->text();
+	if (app->localClient.info.name=="") {
 		QMessageBox::warning(this, "Error", "Enter nickname");
 		return;
 	}
+	app->textEdit->clear();
+	app->listWidget->clear();
+	app->lineEdit->clear();
 	if (!cbCreateServer->checkState()) { // connect to some server
 		QString hostname = leServerIP->text();
 		if (hostname=="") {
@@ -134,9 +140,8 @@ void OptDialog::connectBtnClicked() {
 		}
 		int port = sbPort->value();
 		close();
-		app->textEdit->clear();
 		app->show();
-		app->clientConnection.connectToHost(hostname, port);
+		app->localClient.socket->connectToHost(hostname, port);
 	} else { // create server and connect to it
 		QString hostname = "localhost";
 		int port = sbPort->value();
@@ -144,9 +149,8 @@ void OptDialog::connectBtnClicked() {
 		bool listening = app->serverConnection.listen(port);
 		if (listening) {
 			close();
-			app->textEdit->clear();
 			app->show();
-			app->clientConnection.connectToHost(hostname, port);
+			app->localClient.socket->connectToHost(hostname, port);
 		} else {
 			QMessageBox::critical(this, "Error", app->serverConnection.errorString());
 			return;
@@ -159,8 +163,8 @@ void App::connected() {
 }
 
 void App::localServerReadyMessageReceive(ServerReadyMessage) {
-	ClientConnectMessage msg(localClientName, localClientColor);
-	msg.send(&clientConnection);
+	ClientConnectMessage msg(localClient.info.name, localClient.info.color);
+	msg.send(localClient.socket);
 }
 
 void App::sendPlayersList() {
@@ -196,6 +200,7 @@ void App::newConnection() {
 }
 
 void App::otherClientDisconnected() {
+	cerr <<"enter otherClientDisconnected"<<endl;
 	TCPSocket *s = dynamic_cast<TCPSocket*>(sender());
 	if (s) {
 	int i;
@@ -217,7 +222,7 @@ void App::otherClientDisconnected() {
 		QByteArray data = msg.serialize();
 		getMessageFromOtherClient(data);*/
 	} else s->deleteLater();
-}
+}	cerr <<"exit otherClientDisconnected"<<endl;
 }
 
 void App::disconnected() {
@@ -225,19 +230,22 @@ void App::disconnected() {
 }
 
 void App::error() {
-	cerr << "local errror" << endl;
-	textEdit->append("local error "+clientConnection.errorString());
+	cerr <<"enter error"<<endl;
+	textEdit->append("local error "+localClient.socket->errorString());
 	clientConnection.close();
 	if (serverConnection.isListening()) serverConnection.close();
-	listWidget->clear();
+	//listWidget->clear();
+	cerr <<"exit error"<<endl;
 }
 
 void App::errorFromOtherClient() {
+	cerr <<"enter errorFromOtherClient"<<endl;
 	TCPSocket *s = dynamic_cast<TCPSocket*>(sender());
 	if (s) {
 	textEdit->append("remote error "+s->errorString());
 	s->close(); }
 	//s->deleteLater();
+	cerr <<"exit errorFromOtherClient"<<endl;
 }
 //////////////////////////////////////////////////////////////////
 void App::remoteClientConnectMessageReceive(ClientConnectMessage msg) {
@@ -269,9 +277,9 @@ void App::remoteClientConnectMessageReceive(ClientConnectMessage msg) {
 				sendPlayersList();
 			} else {
 		cerr << clients.size() <<" size"<< endl;
-				Client *client = clients[j];
+				/*Client *client = clients[j];
 				clients.removeAt(j);
-				delete client;//s[j];
+				delete client;//s[j];*/
 		cerr << clients.size() <<" size"<< endl;
 			}
 			cerr <<"received rem"<<endl;

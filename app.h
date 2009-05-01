@@ -33,11 +33,12 @@ public:
     ~App();
 private:
 	OptDialog *dialog;
-	TCPSocket clientConnection;
+	Client localClient;
+	//TCPSocket clientConnection;
 	TCPServer serverConnection;
-	MessageReceiver *local_receiver;
-	QString localClientName;
-	QColor localClientColor;
+	//MessageReceiver *local_receiver;
+	//QString localClientName;
+	//QColor localClientColor;
 	QList<Client*> clients;
 	friend class OptDialog;
 	void sendPlayersList();
