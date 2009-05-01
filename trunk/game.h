@@ -21,6 +21,7 @@ class Game:public QObject
 		~Game();
 		void updatePlayers(QList<ClientInfo>,QList<bool>);
 		void clear();
+		bool isStarted() const;
 	public slots:
 		void start();
 		void turnDone(QColor color, int id,int x,int y);
