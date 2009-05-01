@@ -76,6 +76,7 @@ void TCPSocket::close() {
 		::close(_d);
 		_d = 0;
 		if (isRunning()) wait();
+		buffer_lock.unlock();
 		if (buffer) {
 			free(buffer);
 			buffer=NULL;
