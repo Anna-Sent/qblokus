@@ -59,10 +59,13 @@ void App::chatMessageReceive(ChatMessage msg) {
 void App::playersListMessageReceive(PlayersListMessage msg) {
 	listWidget->clear();
 	QList<ClientInfo> list = msg.getList();
-	for (int i=0;i<list.size();++i)
+	QList<bool> isLocal;
+	for (int i=0;i<list.size();++i) {
 		listWidget->addItem(list[i].name);
+		isLocal.append(list[i].name==localClient.info.name&&list[i].color==localClient.info.color);
+	}
 	listWidget->sortItems();
-	game->updatePlayers(list);
+	game->updatePlayers(list,isLocal);
 }
 
 void App::sendMessage() {
