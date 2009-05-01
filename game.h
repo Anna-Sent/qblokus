@@ -1,7 +1,8 @@
 #include <QObject>
 #include <QList>
 #include <QColor>
-
+//#include "clientinfo.h"
+class ClientInfo;
 class Table;
 class Player;
 class QGraphicsScene;
@@ -18,6 +19,8 @@ class Game:public QObject
 	public:
 		Game(QWidget* widget);
 		~Game();
+		void updatePlayers(QList<ClientInfo>) {};
+		//void clear();
 	public slots:
 		void start();
 		void turnDone(QColor color, int id,int x,int y);
@@ -38,4 +41,3 @@ class Game:public QObject
 		int currplayer;
 		int playersleft;
 };
-

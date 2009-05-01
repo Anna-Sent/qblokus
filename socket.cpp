@@ -18,6 +18,7 @@ TCPSocket::TCPSocket() {
 
 TCPSocket::TCPSocket(int descriptor) {
 	_d=descriptor;
+	std::cerr << "accepted socket " << _d << endl;
 	start();
 }
 
@@ -72,6 +73,7 @@ void TCPSocket::disconnectFromHost () {
 
 void TCPSocket::close() {
 	if (_d > 0) {
+		std::cerr << "closing socket " << _d << endl;
 		::shutdown(_d,2);
 		::close(_d);
 		_d = 0;
@@ -110,6 +112,7 @@ bool TCPSocket::doConnect() {
 		emit error();
 		return false;
 	}
+	std::cerr << "connected socket " << _d << endl;
 	emit connected();
 	return true;
 }
@@ -262,4 +265,3 @@ bool TCPServer::doConnect() {
 	}
 	return true;
 }
-

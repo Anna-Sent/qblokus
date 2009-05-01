@@ -4,6 +4,8 @@
 #include "ui_optionsDialog.h"
 #include "socket.h"
 #include "messagerecv.h"
+#include <iostream>
+#include "game.h"
 
 class App;
 
@@ -18,12 +20,13 @@ public slots:
     void searchBtnClicked();
 };
 
-class Client {
+class Client : public QObject {
+	Q_OBJECT
 public:
 	TCPSocket* socket;
 	MessageReceiver* receiver;
 	ClientInfo info;
-	~Client() { delete receiver; socket->deleteLater(); }
+	~Client() { std::cerr << "Client destructor" << std::endl; delete receiver; socket->deleteLater(); }
 };
 
 class App : public QMainWindow, public Ui::MainWindow {
@@ -34,14 +37,12 @@ public:
 private:
 	OptDialog *dialog;
 	Client localClient;
-	//TCPSocket clientConnection;
 	TCPServer serverConnection;
-	//MessageReceiver *local_receiver;
-	//QString localClientName;
-	//QColor localClientColor;
 	QList<Client*> clients;
 	friend class OptDialog;
 	void sendPlayersList();
+public:
+	Game *game;
 public slots:
 	void sendMessage();
 	void getMessageFromOtherClient(QByteArray);

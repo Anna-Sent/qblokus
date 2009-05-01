@@ -3,6 +3,7 @@
 #include <QColor>
 #include <QByteArray>
 #include <QString>
+#include "clientinfo.h"
 
 enum MessageType { mtHeader, mtChat, mtPlayersList,
 	mtClientConnect, mtClientDisconnect, mtServerReady,
@@ -37,15 +38,6 @@ class ComplexMessage : public Message {
 	public:
 //		ComplexMessage(const MessageHeader& header) {this->header=header;}
 		qint64 getLength() const {return header.len;}
-};
-
-class ClientInfo {
-	public:
-		QString name;
-		QColor color;
-		QByteArray serialize() const;
-		void fill(const char*);
-		int size() const;
 };
 
 class ChatMessage : public ComplexMessage {

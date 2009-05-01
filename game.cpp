@@ -53,6 +53,7 @@ Game::Game(QWidget* widget):currplayer(0)
 	//ui = new Ui::BlokusUi;
 	//ui->setupUi(widget);
 	ui = dynamic_cast<Ui::MainWindow*>(widget);
+	if (ui==0) std::cerr<<"bug!!!!!!" << std::endl;
 	table = new Table(20,20);
 	QGraphicsScene* tablescene = new QGraphicsScene;
 	scenes.append(tablescene);
@@ -82,7 +83,6 @@ void Game::addPlayer(QString name,QColor color, PlayerType type)
 	int i=playersleft;
 	QString playerwidget("gvPlayer");
 	QString playerscore("score");
-
 	player->setPos(0,0);
 	player->setName(name);
 	players.append(player);
@@ -92,6 +92,14 @@ void Game::addPlayer(QString name,QColor color, PlayerType type)
 	QGraphicsView *gv = widget->findChild<QGraphicsView*>(playerwidget+QString::number(i+1));
 	QLCDNumber *lcd = widget->findChild<QLCDNumber*>(playerscore+QString::number(i+1));
 	gv->setScene(playerscene);
+	
+	gv->setMinimumSize(playerscene->sceneRect().size().toSize());
+	gv->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	gv->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	
+	lcd->setPalette(QPalette(color));
+	//ui->horizontalLayout->invalidate();
+	//ui->gridLayout->invalidate();
 	connect(player,SIGNAL(scoreChanged(int)),lcd,SLOT(display(int)));
 	connect(player,SIGNAL(iWin(Player* )),this,SLOT(winner(Player *)));
 	++playersleft;
@@ -154,10 +162,26 @@ Game::~Game()
 	{
 		//scenes[i]->deleteLater();
 		delete scenes[i];
+		delete players[i];
 	}
+	delete table;
 	//delete ui;
 }
-
+/*
+void Game::clear() {
+	for (int i=0;i<scenes.size();++i)
+	{
+		//scenes[i]->deleteLater();
+		delete scenes[i];
+		delete players[i];
+	}
+	playersleft=0;
+	currplayer=0;
+	scenes.clear();
+	players.clear();
+//	delete table;
+}
+*/
 void Game::start()
 {
 	if (players.size()>0)
@@ -169,4 +193,3 @@ void Game::winner(Player* winner)
 	std::cerr << winner->getName().toStdString() << "\n";
 	emit gameOver(winner->getName(),winner->getScore(),winner->getColor());
 }
-
