@@ -82,7 +82,7 @@ void App::sendMessage() {
 void App::getMessageFromOtherClient(QByteArray data) {
 	QList<Client*>::iterator i;
 	for (i = clients.begin(); i != clients.end(); ++i)
-		if ((*i)->socket->isConnected())
+		if ((*i)->socket->isConnected()&&(*i)->state==2)
 			(*i)->socket->write(data.data(), data.size());
 }
 
@@ -90,8 +90,8 @@ void App::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage msg) {
 	int code = msg.getCode();
 	if (code != 0) {
 		switch (msg.getCode()) {
-			case 1: cerr << "bad color" << endl; break;
-			case 2: cerr << "bad name" << endl; break;
+			case 1: textEdit->append(QString::fromUtf8("Этот цвет уже используется")); break;
+			case 2: textEdit->append(QString::fromUtf8("Этот ник уже используется")); break;
 		}
 		localClient.socket->close();//disconnectFromHost();
 //		default: cerr << "unknown error code " << /*msg.getCode()<<*/ endl;
@@ -128,7 +128,7 @@ void OptDialog::searchBtnClicked() {
 void OptDialog::connectBtnClicked() {
 	switch (comboBox->currentIndex()) {
 		case 0: app->localClient.info.color = Qt::red; break;
-		case 1: app->localClient.info.color = Qt::yellow; break;
+		case 1: app->localClient.info.color = Qt::darkYellow; break;
 		case 2: app->localClient.info.color = Qt::green; break;
 		case 3: app->localClient.info.color = Qt::blue; break;
 		default: QMessageBox::warning(this, "Error", "Incorrect color"); return;
@@ -202,6 +202,7 @@ void App::newConnection() {
 		Client *client = new Client;
 		client->socket = s;
 		client->receiver = rr;
+		client->state = 1;
 		clients.append(client);
 		cerr << clients.size() <<" size"<< endl;
 		ServerReadyMessage msg;
@@ -274,6 +275,7 @@ void App::remoteClientConnectMessageReceive(ClientConnectMessage msg) {
 			if (!error) {cerr <<"33333" <<endl;
 				clients[j]->info.name = msg.getName();
 				clients[j]->info.color = msg.getColor();
+				clients[j]->state = 2;
 				//game->addPlayer(msg.getName(),msg.getColor(),ptNetwork);
 				sendPlayersList();
 			} else {
