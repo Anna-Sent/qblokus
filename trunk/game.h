@@ -19,8 +19,8 @@ class Game:public QObject
 	public:
 		Game(QWidget* widget);
 		~Game();
-		void updatePlayers(QList<ClientInfo>) {};
-		//void clear();
+		void updatePlayers(QList<ClientInfo>,QList<bool>);
+		void clear();
 	public slots:
 		void start();
 		void turnDone(QColor color, int id,int x,int y);
@@ -39,5 +39,6 @@ class Game:public QObject
 		Ui::MainWindow* ui;
 		QWidget* widget;
 		int currplayer;
+		bool running;
 		int playersleft;
 };
