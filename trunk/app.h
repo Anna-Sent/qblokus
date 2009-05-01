@@ -23,10 +23,12 @@ public slots:
 class Client : public QObject {
 	Q_OBJECT
 public:
+	int state;
 	TCPSocket* socket;
 	MessageReceiver* receiver;
 	ClientInfo info;
 	~Client() { std::cerr << "Client destructor" << std::endl; delete receiver; socket->deleteLater(); }
+	Client():state(0),socket(NULL),receiver(NULL) {}
 };
 
 class App : public QMainWindow, public Ui::MainWindow {
