@@ -21,6 +21,9 @@ class TCPSocket: public QThread
 		virtual void close();
 		bool isConnected();
 		QString errorString() const;
+		
+		QString getHostname() const { return hostName; }
+		quint16 getPort() const { return port; }
 	private:
 		int _d;
 		QString hostName;
@@ -68,4 +71,3 @@ class TCPServer: public QThread {
 	signals:
 		void newConnection();
 };
-

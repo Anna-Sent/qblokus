@@ -65,6 +65,13 @@ void MessageReceiver::readyRead() {
 				emit getMessage(msg->serialize());
 			}
 		}
+		{
+			PingMessage *msg;
+			if ((msg=dynamic_cast<PingMessage*>(current))) {
+				emit pingMessageReceive(*msg);
+				//emit getMessage(msg->serialize());
+			}
+		}
 		buffer.remove(0,current->getLength());
 		Message* old = current;
 		current = current->next();
@@ -99,6 +106,8 @@ Message* MessageHeader::next() const {
 			return new ServerReadyMessage(*this);
 		case (mtConnectionAccepted):
 			return new ConnectionAcceptedMessage(*this);
+		case (mtPing):
+			return new PingMessage(*this);
 		default:
 			return NULL;
 	}
@@ -193,18 +202,6 @@ ClientDisconnectMessage::ClientDisconnectMessage(QString name, QColor color) {
 	this->info.color = color;
 	header.len = info.size();
 	header.type = mtClientDisconnect;
-}
-
-ServerReadyMessage::ServerReadyMessage() {
-	header.len = 0;
-	header.type = mtServerReady;
-}
-
-QByteArray ServerReadyMessage::serialize() const {
-	return header.serialize();
-}
-
-void ServerReadyMessage::fill(const QByteArray&) {
 }
 
 ConnectionAcceptedMessage::ConnectionAcceptedMessage(int errorCode) {

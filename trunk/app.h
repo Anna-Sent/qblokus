@@ -6,6 +6,8 @@
 #include "messagerecv.h"
 #include <iostream>
 #include "game.h"
+#include <QTimer>
+#include <QTime>
 
 class App;
 
@@ -18,17 +20,19 @@ private:
 public slots:
     void connectBtnClicked();
     void searchBtnClicked();
+	void toggled(bool);
 };
 
 class Client : public QObject {
 	Q_OBJECT
 public:
-	int state;
+	int state; // for remote client
+	QTime lastpingtime; // for remote client
 	TCPSocket* socket;
 	MessageReceiver* receiver;
 	ClientInfo info;
 	~Client() { std::cerr << "Client destructor" << std::endl; delete receiver; socket->deleteLater(); }
-	Client():state(0),socket(NULL),receiver(NULL) {}
+	Client():state(0),socket(NULL),receiver(NULL),lastpingtime(QTime::currentTime()) {}
 };
 
 class App : public QMainWindow, public Ui::MainWindow {
@@ -41,11 +45,15 @@ private:
 	Client localClient;
 	TCPServer serverConnection;
 	QList<Client*> clients;
+	QTimer timer;
 	friend class OptDialog;
 	void sendPlayersList();
 public:
 	Game *game;
 public slots:
+	void ping();
+	void localPingMessageReceive(PingMessage);
+	void remotePingMessageReceive(PingMessage);
 	void sendMessage();
 	void getMessageFromOtherClient(QByteArray);
 	void connected();
@@ -54,6 +62,7 @@ public slots:
 	void error();
 	void errorFromOtherClient();
 	void exit();
+	void reconnectToServer();
 	void disconnectFromServer();
 	void newConnection();
 	void chatMessageReceive(ChatMessage);
