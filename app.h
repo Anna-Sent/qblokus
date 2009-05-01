@@ -46,6 +46,7 @@ private:
 	TCPServer serverConnection;
 	QList<Client*> clients;
 	QTimer timer;
+	QTimer localtimer;
 	friend class OptDialog;
 	void sendPlayersList();
 public:
@@ -54,6 +55,7 @@ public slots:
 	void ping();
 	void localPingMessageReceive(PingMessage);
 	void remotePingMessageReceive(PingMessage);
+	void localTimerCheck();
 	void sendMessage();
 	void getMessageFromOtherClient(QByteArray);
 	void connected();
