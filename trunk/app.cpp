@@ -14,18 +14,19 @@ OptDialog::OptDialog(App* app) {
 
 App::App(QWidget *parent) {
 	setupUi(this);
+	game = new Game(this);
 	//qRegisterMetaType<QAbstractSocket::SocketError>("QAbstractSocket::SocketError");
-	MessageReceiver *local_receiver=new MessageReceiver(&clientConnection);
+	TCPSocket *clientConnection = new TCPSocket;
+	MessageReceiver *local_receiver=new MessageReceiver(clientConnection);
 	connect(local_receiver, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(chatMessageReceive(ChatMessage)));
 	connect(local_receiver, SIGNAL(playersListMessageReceive(PlayersListMessage)), this, SLOT(playersListMessageReceive(PlayersListMessage)));
 	connect(local_receiver, SIGNAL(serverReadyMessageReceive(ServerReadyMessage)), this, SLOT(localServerReadyMessageReceive(ServerReadyMessage)));
 	connect(local_receiver, SIGNAL(clientConnectMessageReceive(ClientConnectMessage)), this, SLOT(localClientConnectMessageReceive(ClientConnectMessage)));
 	connect(local_receiver, SIGNAL(connectionAcceptedMessageReceive(ConnectionAcceptedMessage)), this, SLOT(localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)));
-	TCPSocket *clientConnection = new TCPSocket;
 	connect(clientConnection, SIGNAL(connected()), this, SLOT(connected()));
 	connect(clientConnection, SIGNAL(disconnected()), this, SLOT(disconnected()));
 	connect(clientConnection, SIGNAL(error()), this, SLOT(error()));
-	connect(serverConnection, SIGNAL(newConnection()), this, SLOT(newConnection()));
+	connect(&serverConnection, SIGNAL(newConnection()), this, SLOT(newConnection()));
 	localClient.socket = clientConnection;
 	localClient.receiver = local_receiver;
 	connect(a_exit, SIGNAL(activated()), this, SLOT(exit()));
@@ -61,6 +62,7 @@ void App::playersListMessageReceive(PlayersListMessage msg) {
 	for (int i=0;i<list.size();++i)
 		listWidget->addItem(list[i].name);
 	listWidget->sortItems();
+	game->updatePlayers(list);
 }
 
 void App::sendMessage() {
@@ -82,10 +84,12 @@ void App::getMessageFromOtherClient(QByteArray data) {
 }
 
 void App::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage msg) {
-	cerr<<"get conn acc"<<endl;switch (msg.getCode()) {
-		case 0: cerr << "accepted" << endl; break;
-		case 1: //cerr << "bad color" << endl; break;
-		case 2: cerr << "bad "<<(msg.getCode()==2?"name":"color") << endl;// break;
+	int code = msg.getCode();
+	if (code != 0) {
+		switch (msg.getCode()) {
+			case 1: cerr << "bad color" << endl; break;
+			case 2: cerr << "bad name" << endl; break;
+		}
 		localClient.socket->close();//disconnectFromHost();
 //		default: cerr << "unknown error code " << /*msg.getCode()<<*/ endl;
 	}
@@ -95,10 +99,12 @@ void App::disconnectFromServer() {
 	localClient.socket->disconnectFromHost();
 	if (serverConnection.isListening()) {
 		serverConnection.close();
-		for (int j=0;j<clients.size();++j) {
-			Client *client = clients[j];
-			clients.removeAt(j);
-			delete client;//clients[j];//remote_receivers[j];
+		
+		while (clients.size()>0) {
+			Client *client = clients[0];
+			clients.removeAt(0);
+			client->socket->close();
+			client->deleteLater(); //delete client;//clients[j];//remote_receivers[j];
 			//clients[j]->close();
 			//clients[j]->deleteLater();
 			//lete playersList[j];
@@ -156,6 +162,7 @@ void OptDialog::connectBtnClicked() {
 			return;
 		}
 	}
+	//app->game = new Game(app);
 }
 
 void App::connected() {
@@ -208,19 +215,12 @@ void App::otherClientDisconnected() {
 		if (s == clients[i]->socket)
 			break;
 	if (i != clients.size()) {
-		//delete remote_receivers[i];
-		//s->deleteLater();
-		//cerr << "remove at "<<i<<" " << playersList[i].name.toUtf8().data()<<endl;
-		//playersList.removeAt(i);???????????????????
 		Client *client = clients[i];
 		clients.removeAt(i);
-		delete client;//s[i];
+		client->deleteLater();
 		cerr << clients.size() <<" size"<< endl;
 
 		sendPlayersList();
-		/*PlayersListMessage msg(playersList);
-		QByteArray data = msg.serialize();
-		getMessageFromOtherClient(data);*/
 	} else s->deleteLater();
 }	cerr <<"exit otherClientDisconnected"<<endl;
 }
@@ -232,7 +232,7 @@ void App::disconnected() {
 void App::error() {
 	cerr <<"enter error"<<endl;
 	textEdit->append("local error "+localClient.socket->errorString());
-	clientConnection.close();
+	localClient.socket->close();
 	if (serverConnection.isListening()) serverConnection.close();
 	//listWidget->clear();
 	cerr <<"exit error"<<endl;
@@ -244,7 +244,6 @@ void App::errorFromOtherClient() {
 	if (s) {
 	textEdit->append("remote error "+s->errorString());
 	s->close(); }
-	//s->deleteLater();
 	cerr <<"exit errorFromOtherClient"<<endl;
 }
 //////////////////////////////////////////////////////////////////
@@ -254,8 +253,6 @@ void App::remoteClientConnectMessageReceive(ClientConnectMessage msg) {
 	if (r) {
 		int j;
 		for (j = 0; j< clients.size() && r!=clients[j]->receiver; ++j) {}
-			//if (r == clients[j]->receiver)
-				//break;cerr << "22222222" << endl;
 		if (j != clients.size()) {
 			textEdit->setTextColor(msg.getColor());
 			textEdit->append(msg.getName()+" connected remote!!!!!!!!!");
@@ -274,12 +271,13 @@ void App::remoteClientConnectMessageReceive(ClientConnectMessage msg) {
 			if (!error) {cerr <<"33333" <<endl;
 				clients[j]->info.name = msg.getName();
 				clients[j]->info.color = msg.getColor();
+				//game->addPlayer(msg.getName(),msg.getColor(),ptNetwork);
 				sendPlayersList();
 			} else {
 		cerr << clients.size() <<" size"<< endl;
-				/*Client *client = clients[j];
+				Client *client = clients[j];
 				clients.removeAt(j);
-				delete client;//s[j];*/
+				client->socket->close(); client->deleteLater(); //delete client;//s[j];
 		cerr << clients.size() <<" size"<< endl;
 			}
 			cerr <<"received rem"<<endl;
@@ -291,11 +289,4 @@ void App::localClientConnectMessageReceive(ClientConnectMessage msg) {
 	cerr <<"received loc"<<endl;
 	textEdit->setTextColor(msg.getColor());
 	textEdit->append(msg.getName()+" connected local!!!!!!");
-
-/*
-	playersList.append(msg.getInfo());
-	PlayersListMessage msg1(playersList);
-	QByteArray data = msg1.serialize();
-	getMessageFromOtherClient(data);
-	cerr << "send"<<endl;*/
 }
