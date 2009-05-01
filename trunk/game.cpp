@@ -81,7 +81,7 @@ void Game::turnDone(QColor color, int id,int x,int y)
 
 void Game::playerRetired()
 {
-	if (dynamic_cast<QPushButton*>(sender())) {
+	if (sender()&&dynamic_cast<QPushButton*>(sender())) {
 		LocalPlayer* player = dynamic_cast<LocalPlayer*>(players[currplayer]);
 		if (!player) return;
 		emit playerRetired(players[currplayer]->getName(),players[currplayer]->getColor());
@@ -98,10 +98,9 @@ void Game::playerRetired()
 		{
 			//winner(players[currplayer]);
 			int msp=0;
-			for(int p=1;p<players.size();++p) {
+			for(int p=1;p<players.size();++p)
 				if (players[p]->getScore()>players[msp]->getScore()) msp=p;
-				winner(players[msp]);
-			}
+			winner(players[msp]);
 		} else
 		{
 			players[currplayer]->startTurn();
@@ -163,7 +162,7 @@ bool operator==(const ClientInfo& a1,const ClientInfo& a2)
 
 void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 {
-	if (!running)
+	if (false)
 	{
 		int i=0;
 		clear();
@@ -174,7 +173,67 @@ void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 	}
 	else
 	{
-
+		//merge
+		int pl=0,cl=0;
+		while(pl<players.size()||cl<clients.size())
+		{
+			if (pl==players.size()||cl==clients.size())
+			{
+				if (pl==players.size())
+				{
+					addPlayer(clients[cl].name,clients[cl].color,local[cl]?ptLocal:ptNetwork);
+				}
+				if (cl==clients.size())
+				{
+					for(int i=pl;i<players.size();++i)
+					{
+						Player *player=players[i];
+						if (!player->surrendered)
+						{
+							player->surrendered=true;
+							--playersleft;
+						}
+						if (playersleft==1)
+						{
+							//winner(players[currplayer]);
+							int msp=0;
+							for(int p=1;p<players.size();++p)
+								if (players[p]->getScore()>players[msp]->getScore()) msp=p;
+							winner(players[msp]);
+						}
+						player->update();
+					}
+					pl=players.size();
+				}
+			} else {
+				std::cerr << players[pl]->getName().toStdString() << " " << clients[cl].name.toStdString() << std::endl;
+				if (players[pl]->getName()==clients[cl].name&&players[pl]->getColor()==clients[cl].color)
+				{
+					++pl;
+					++cl;
+				}
+				else
+				{
+					Player *player=players[pl];
+					if (!player->surrendered)
+					{
+						player->surrendered=true;
+						--playersleft;
+					}
+					player->update();
+						if (playersleft==1)
+					{
+						//winner(players[currplayer]);
+						int msp=0;
+						for(int p=1;p<players.size();++p)
+							if (players[p]->getScore()>players[msp]->getScore()) msp=p;
+						winner(players[msp]);
+					}
+					++pl;			
+				}
+			}
+		}
 	}
+	std::cerr << "----------players updated\n";
 }
 
