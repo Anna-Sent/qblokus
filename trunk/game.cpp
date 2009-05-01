@@ -123,18 +123,18 @@ Game::~Game()
 	{
 		//scenes[i]->deleteLater();
 		delete scenes[i];
-		delete players[i];
+		//delete players[i];
 	}
 	delete table;
 	//delete ui;
 }
-/*
+
 void Game::clear() {
 	for (int i=0;i<scenes.size();++i)
 	{
 		//scenes[i]->deleteLater();
 		delete scenes[i];
-		delete players[i];
+		//delete players[i];
 	}
 	playersleft=0;
 	currplayer=0;
@@ -142,7 +142,7 @@ void Game::clear() {
 	players.clear();
 //	delete table;
 }
-*/
+
 void Game::start()
 {
 	if (players.size()>0)
@@ -165,7 +165,12 @@ void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 {
 	if (!running)
 	{
-		addPlayer(clients[0].name,clients[0].color,local[0]?ptLocal:ptNetwork);
+		int i=0;
+		clear();
+		for(int i=0;i<clients.size();++i)
+		{
+			addPlayer(clients[i].name,clients[i].color,local[i]?ptLocal:ptNetwork);
+		}		
 	}
 	else
 	{
