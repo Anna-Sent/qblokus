@@ -236,4 +236,8 @@ void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 	}
 	std::cerr << "----------players updated\n";
 }
+bool Game::isStarted() const
+{
+	return running;
+}
 
