@@ -17,7 +17,9 @@ App::App(QWidget *parent) {
 	setupUi(this);
 	game = new Game(this);
 	timer.setInterval(5000);
+	localtimer.setInterval(5000);
 	connect(&timer, SIGNAL(timeout()), this, SLOT(ping()));
+	connect(&localtimer, SIGNAL(timeout()), this, SLOT(localTimerCheck()));
 	//qRegisterMetaType<QAbstractSocket::SocketError>("QAbstractSocket::SocketError");
 	TCPSocket *clientConnection = new TCPSocket;
 	MessageReceiver *local_receiver=new MessageReceiver(clientConnection);
@@ -59,7 +61,14 @@ void App::ping() {
 
 void App::localPingMessageReceive(PingMessage msg) {
 	msg.send(localClient.socket);
+	localClient.lastpingtime.start();
 	cerr << "get ping" << endl;
+}
+
+void App::localTimerCheck() {
+	int elapsed = localClient.lastpingtime.elapsed();
+	if (elapsed > 15000)
+		localClient.socket->close();
 }
 
 void App::remotePingMessageReceive(PingMessage) {
@@ -99,6 +108,7 @@ void App::reconnectToServer() {
 	QString hostname = localClient.socket->getHostname();
 	quint16 port = localClient.socket->getPort();
 	localClient.socket->disconnectFromHost();
+	localtimer.stop();
 	if (serverConnection.isListening()) {
 		serverConnection.close();
 		timer.stop();
@@ -115,7 +125,6 @@ void App::reconnectToServer() {
 	if (isServer) {
 		bool listening = serverConnection.listen(port);
 		if (listening) {
-			localClient.socket->connectToHost(hostname, port);
 			timer.start();
 		} else {
 			QMessageBox::critical(this, "Error", serverConnection.errorString());
@@ -123,6 +132,7 @@ void App::reconnectToServer() {
 		}
 	}
 	localClient.socket->connectToHost(hostname, port);
+	localtimer.start();
 }
 
 void App::chatMessageReceive(ChatMessage msg) {
@@ -170,12 +180,14 @@ void App::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage msg) {
 			case 2: textEdit->append(QString::fromUtf8("Этот ник уже используется")); break;
 		}
 		localClient.socket->close();//disconnectFromHost();
+		localtimer.stop();
 //		default: cerr << "unknown error code " << /*msg.getCode()<<*/ endl;
 	}
 }
 
 void App::disconnectFromServer() {
 	localClient.socket->disconnectFromHost();
+	localtimer.stop();
 	if (serverConnection.isListening()) {
 		serverConnection.close();
 		timer.stop();
@@ -227,6 +239,7 @@ void OptDialog::connectBtnClicked() {
 		close();
 		app->show();
 		app->localClient.socket->connectToHost(hostname, port);
+		app->localtimer.start();
 	} else { // create server and connect to it
 		QString hostname = "localhost";
 		int port = sbPort->value();
@@ -237,6 +250,7 @@ void OptDialog::connectBtnClicked() {
 			close();
 			app->show();
 			app->localClient.socket->connectToHost(hostname, port);
+			app->localtimer.start();
 		} else {
 			QMessageBox::critical(this, "Error", app->serverConnection.errorString());
 			return;
@@ -315,6 +329,7 @@ void App::error() {
 	cerr <<"enter error"<<endl;
 	textEdit->append("local error "+localClient.socket->errorString());
 	localClient.socket->close();
+	localtimer.stop();
 	if (serverConnection.isListening()) { serverConnection.close(); timer.stop(); }
 	cerr <<"exit error"<<endl;
 }
