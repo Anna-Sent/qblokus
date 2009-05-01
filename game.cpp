@@ -7,9 +7,48 @@
 #include "ui_racingForm.h"
 #include <iostream>
 #include <QColor>
-#include "clientinfo.h"
+/*
+Game::Game(QWidget* widget):currplayer(0)
+{
+	ui = new Ui::BlokusUi;
+	ui->setupUi(widget);
+	QList<QColor> colors;
+	colors.push_back(QColor(244,120,12));
+	colors.push_back(QColor(10,120,250));
+	colors.push_back(QColor(11,120,12));
+	colors.push_back(QColor(10,240,250));
+	table = new Table(20,20);
+	QGraphicsScene* tablescene = new QGraphicsScene;
+	scenes.append(tablescene);
+	tablescene->addItem(table);
+	ui->gvTable->setScene(tablescene);
+	QString playerwidget("gvPlayer");
+	QString playerscore("score");
 
-Game::Game(QWidget* widget):currplayer(0),running(false)
+	for(int i=0;i<colors.size();++i)
+	{
+		Player* player = new LocalPlayer(colors[i]);
+		player->setPos(0,0);
+		player->setName(QString("player")+QString::number(i+1));
+		players.append(player);
+		QGraphicsScene* playerscene = new QGraphicsScene;
+		scenes.append(playerscene);
+		playerscene->addItem(player);
+		QGraphicsView *gv = widget->findChild<QGraphicsView*>(playerwidget+QString::number(i+1));
+		QLCDNumber *lcd = widget->findChild<QLCDNumber*>(playerscore+QString::number(i+1));
+	
+		gv->setScene(playerscene);
+		connect(player,SIGNAL(scoreChanged(int)),lcd,SLOT(display(int)));
+		connect(player,SIGNAL(iWin(Player* )),this,SLOT(winner(Player *)));
+	}
+	connect(table,SIGNAL(turnComplete(QColor,int,int,int)),this,SLOT(turnDone(QColor,int,int,int)));
+	QPushButton *surrender = widget->findChild<QPushButton*>(QString("btnSurrender"));
+
+	connect(surrender,SIGNAL(clicked()),this,SLOT(playerRetired()));
+	playersleft=players.size();
+}
+*/
+Game::Game(QWidget* widget):currplayer(0)
 {
 	//ui = new Ui::BlokusUi;
 	//ui->setupUi(widget);
@@ -123,18 +162,18 @@ Game::~Game()
 	{
 		//scenes[i]->deleteLater();
 		delete scenes[i];
-		//delete players[i];
+		delete players[i];
 	}
 	delete table;
 	//delete ui;
 }
-
+/*
 void Game::clear() {
 	for (int i=0;i<scenes.size();++i)
 	{
 		//scenes[i]->deleteLater();
 		delete scenes[i];
-		//delete players[i];
+		delete players[i];
 	}
 	playersleft=0;
 	currplayer=0;
@@ -142,12 +181,11 @@ void Game::clear() {
 	players.clear();
 //	delete table;
 }
-
+*/
 void Game::start()
 {
 	if (players.size()>0)
 		players[0]->startTurn();
-	running=true;
 }
 
 void Game::winner(Player* winner)
@@ -155,26 +193,3 @@ void Game::winner(Player* winner)
 	std::cerr << winner->getName().toStdString() << "\n";
 	emit gameOver(winner->getName(),winner->getScore(),winner->getColor());
 }
-
-bool operator==(const ClientInfo& a1,const ClientInfo& a2)
-{
-	return a1.name==a2.name&&a1.color==a2.color;
-}
-
-void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
-{
-	if (!running)
-	{
-		int i=0;
-		clear();
-		for(int i=0;i<clients.size();++i)
-		{
-			addPlayer(clients[i].name,clients[i].color,local[i]?ptLocal:ptNetwork);
-		}		
-	}
-	else
-	{
-
-	}
-}
-
