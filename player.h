@@ -38,6 +38,7 @@ class Player:public QObject, public QGraphicsItem
 		int tilesleft;
 		bool surrendered;
 		bool active;
+		friend class Game;
 };
 #endif
 
