@@ -49,6 +49,8 @@ private:
 	QTimer localtimer;
 	friend class OptDialog;
 	void sendPlayersList();
+	void perror(QString);
+	void pinfo(QString);
 public:
 	Game *game;
 public slots:
@@ -72,6 +74,7 @@ public slots:
 	void remoteClientConnectMessageReceive(ClientConnectMessage);
 	void localServerReadyMessageReceive(ServerReadyMessage);
 	void localClientConnectMessageReceive(ClientConnectMessage);
+	void localClientDisconnectMessageReceive(ClientDisconnectMessage);
 	void localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage);
 };
 #endif
