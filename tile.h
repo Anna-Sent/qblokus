@@ -1,6 +1,7 @@
 # include <string>
 # include <vector>
 # include <iostream>
+# include <QString>
 
 class Tile
 {
@@ -13,6 +14,7 @@ class Tile
 		int score() const;
 		std::vector<std::vector<char> > data;
 		std::string getAsText() const;
+		QString getAsQString() const {return QString(getAsText().c_str());};
 		int scor;
 };
 std::ostream& operator<<(std::ostream&,const Tile&);

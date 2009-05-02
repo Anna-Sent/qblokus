@@ -20,7 +20,7 @@ Game::Game(QWidget* widget):currplayer(0),running(false)
 	//scenes.append(tablescene);
 	tablescene->addItem(table);
 	ui->gvTable->setScene(tablescene);
-	connect(table,SIGNAL(turnComplete(QColor,int,int,int)),this,SLOT(turnDone(QColor,int,int,int)));
+	connect(table,SIGNAL(turnComplete(QColor,QString,int,int,int)),this,SLOT(turnDone(QColor,QString,int,int,int)));
 	QPushButton *surrender = widget->findChild<QPushButton*>(QString("btnSurrender"));
 	connect(surrender,SIGNAL(clicked()),this,SLOT(playerRetired()));
 	this->widget=widget;
@@ -67,15 +67,14 @@ void Game::addPlayer(QString name,QColor color, PlayerType type)
 }
 
 
-void Game::turnDone(QColor color, int id,int x,int y)
+void Game::turnDone(QColor color, QString tile,int id,int x,int y)
 {
 	if (color!=players[currplayer]->getColor()) return;
 	if (dynamic_cast<Table*>(sender())) {
 		std::cerr << "111\n";
-		emit turnDone(players[currplayer]->getName(),color,id,x,y);
+		emit turnDone(players[currplayer]->getName(),color,tile,id,x,y);
 	}
-	std::cerr << "td1\n";
-	players[currplayer]->turnComplete(color,id,x,y);
+	players[currplayer]->turnComplete(color,tile,id,x,y);
 	do {
 		currplayer=(currplayer+1)%players.size();
 	} while(players[currplayer]->getSurrendered());

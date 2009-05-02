@@ -21,7 +21,7 @@ class Player:public QObject, public QGraphicsItem
 		ColorItem* getTile(int i) const {return items[i];}
 	public slots:
 		virtual void startTurn();
-		virtual void turnComplete(QColor color,int item,int x,int y);
+		virtual void turnComplete(QColor color,QString tile,int item,int x,int y);
 		virtual void surrender();
 	signals:
 		void turnComplete();

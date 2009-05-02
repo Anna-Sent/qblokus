@@ -110,7 +110,7 @@ void Player::setName(const QString& newname)
 	name = newname;
 }
 
-void Player::turnComplete(QColor color,int item,int x,int y)
+void Player::turnComplete(QColor color,QString,int item,int x,int y)
 {
 	Q_UNUSED(x);
 	Q_UNUSED(y);

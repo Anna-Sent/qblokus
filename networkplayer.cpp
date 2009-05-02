@@ -7,10 +7,11 @@ NetworkPlayer::NetworkPlayer(QColor clr,Table* table,int wid,int hei , QGraphics
 
 }
 
-void NetworkPlayer::turnComplete(QColor color,int item,int x,int y)
+void NetworkPlayer::turnComplete(QColor color,QString tile,int item,int x,int y)
 {
 	if (color!=this->color) return;
-	Player::turnComplete(color,item,x,y);
-	tbl->Accept(x,y,*items[item],item,true,false,color);
+	Tile til(tile.toStdString());
+	Player::turnComplete(color,tile,item,x,y);
+	tbl->Accept(x,y,til,item,true,false,color);
 }
 

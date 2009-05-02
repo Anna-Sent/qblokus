@@ -24,7 +24,7 @@ class Game:public QObject
 		bool isStarted() const;
 	public slots:
 		void start();
-		void turnDone(QColor color, int id,int x,int y);
+		void turnDone(QColor color, QString tile,int id,int x,int y);
 		void addPlayer(QString name,QColor color, PlayerType type);
 		void playerRetired();
 	private slots:
@@ -32,7 +32,7 @@ class Game:public QObject
 	signals:
 		void gameOver(QString winner,int score,QColor color);
 		void playerRetired(QString name, QColor color);
-		void turnDone(QString name,QColor color, int id,int x,int y);
+		void turnDone(QString name,QColor color, QString mask,int id,int x,int y);
 	protected:
 		QList<Player*> players;
 		QList<QGraphicsScene*> scenes;
