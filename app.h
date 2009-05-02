@@ -31,8 +31,8 @@ public:
 	TCPSocket* socket;
 	MessageReceiver* receiver;
 	ClientInfo info;
-	~Client() { std::cerr << "Client destructor" << std::endl; delete receiver; socket->deleteLater(); }
-	Client():state(0),socket(NULL),receiver(NULL),lastpingtime(QTime::currentTime()) {}
+	~Client() { delete receiver; socket->deleteLater(); }
+	Client():state(0),lastpingtime(QTime::currentTime()),socket(NULL),receiver(NULL) {}
 };
 
 class App : public QMainWindow, public Ui::MainWindow {
@@ -51,30 +51,38 @@ private:
 	void sendPlayersList();
 	void perror(QString);
 	void pinfo(QString);
+	void sendToAll(Message*);
 public:
 	Game *game;
 public slots:
+	void startGame();
 	void ping();
 	void localPingMessageReceive(PingMessage);
 	void remotePingMessageReceive(PingMessage);
 	void localTimerCheck();
 	void sendMessage();
-	void getMessageFromOtherClient(QByteArray);
+	void remoteChatMessageReceive(ChatMessage);//getMessageFromOtherClient(QByteArray);
 	void connected();
 	void disconnected();
-	void otherClientDisconnected();
+	void remoteDisconnected();
 	void error();
-	void errorFromOtherClient();
+	void remoteError();
 	void exit();
-	void reconnectToServer();
 	void disconnectFromServer();
 	void newConnection();
-	void chatMessageReceive(ChatMessage);
-	void playersListMessageReceive(PlayersListMessage);
-	void remoteClientConnectMessageReceive(ClientConnectMessage);
+	void localChatMessageReceive(ChatMessage);
+	void localPlayersListMessageReceive(PlayersListMessage);
+	void remoteTryToConnectMessageReceive(TryToConnectMessage);
 	void localServerReadyMessageReceive(ServerReadyMessage);
 	void localClientConnectMessageReceive(ClientConnectMessage);
 	void localClientDisconnectMessageReceive(ClientDisconnectMessage);
 	void localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage);
+	// game signals
+	void localTurnMessageReceive(TurnMessage);
+	void localStartGameMessageReceive(StartGameMessage);
+	void remoteTurnMessageReceive(TurnMessage);
+	
+	void turnDone(QString,QColor,int,int,int);
+	//void remoteStartGameMessageReceive(StartGameMessage);
 };
 #endif

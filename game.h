@@ -26,8 +26,8 @@ class Game:public QObject
 		void start();
 		void turnDone(QColor color, int id,int x,int y);
 		void addPlayer(QString name,QColor color, PlayerType type);
-
 		void playerRetired();
+	private slots:
 		void winner(Player*);
 	signals:
 		void gameOver(QString winner,int score,QColor color);
@@ -36,10 +36,12 @@ class Game:public QObject
 	protected:
 		QList<Player*> players;
 		QList<QGraphicsScene*> scenes;
+		QGraphicsScene* tablescene;
 		Table* table;
 		Ui::MainWindow* ui;
 		QWidget* widget;
 		int currplayer;
 		bool running;
 		int playersleft;
+		bool isserver;
 };

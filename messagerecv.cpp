@@ -21,54 +21,75 @@ void MessageReceiver::readyRead() {
 	buffer.append(QByteArray(tmp,len));
 	while (current->getLength()<=buffer.size())
 	{
+		std::cerr << current->getLength() << std::endl;
 		current->fill(buffer);
 		{
 			ChatMessage *msg;
 			if ((msg=dynamic_cast<ChatMessage*>(current))) {
-			       emit chatMessageReceive(*msg);
-			       emit getMessage(msg->serialize());
+					emit chatMessageReceive(*msg);
+					//emit getMessage(msg->serialize());
 			}
 		}
 		{
 			PlayersListMessage *msg;
 			if ((msg=dynamic_cast<PlayersListMessage*>(current))) {
 				emit playersListMessageReceive(*msg);
-				emit getMessage(msg->serialize());
+				//emit getMessage(msg->serialize());
 			}
 		}
 		{
 			ClientConnectMessage *msg;
 			if ((msg=dynamic_cast<ClientConnectMessage*>(current))) {
 				emit clientConnectMessageReceive(*msg);
-				emit getMessage(msg->serialize());
-				cerr<<"emitted"<<endl;
+				//emit getMessage(msg->serialize());
+			}
+		}
+		{
+			TryToConnectMessage *msg;
+			if ((msg=dynamic_cast<TryToConnectMessage*>(current))) {
+				emit tryToConnectMessageReceive(*msg);
+				//emit getMessage(msg->serialize());
 			}
 		}
 		{
 			ClientDisconnectMessage *msg;
 			if ((msg=dynamic_cast<ClientDisconnectMessage*>(current))) {
 				emit clientDisconnectMessageReceive(*msg);
-				emit getMessage(msg->serialize());
+				//emit getMessage(msg->serialize());
 			}
 		}
 		{
 			ServerReadyMessage *msg;
 			if ((msg=dynamic_cast<ServerReadyMessage*>(current))) {
 				emit serverReadyMessageReceive(*msg);
-				emit getMessage(msg->serialize());
+				//emit getMessage(msg->serialize());
 			}
 		}
 		{
 			ConnectionAcceptedMessage *msg;
 			if ((msg=dynamic_cast<ConnectionAcceptedMessage*>(current))) {
 				emit connectionAcceptedMessageReceive(*msg);
-				emit getMessage(msg->serialize());
+				//emit getMessage(msg->serialize());
 			}
 		}
 		{
 			PingMessage *msg;
 			if ((msg=dynamic_cast<PingMessage*>(current))) {
 				emit pingMessageReceive(*msg);
+				//emit getMessage(msg->serialize());
+			}
+		}
+		{
+			StartGameMessage *msg;
+			if ((msg=dynamic_cast<StartGameMessage*>(current))) {
+				emit startGameMessageReceive(*msg);
+				//emit getMessage(msg->serialize());
+			}
+		}
+		{
+			TurnMessage *msg;
+			if ((msg=dynamic_cast<TurnMessage*>(current))) {
+				emit turnMessageReceive(*msg);
 				//emit getMessage(msg->serialize());
 			}
 		}
@@ -99,6 +120,7 @@ Message* MessageHeader::next() const {
 		case (mtPlayersList):
 			return new PlayersListMessage(*this);
 		case (mtClientConnect):
+			std::cerr << "clconnmess created\n";
 			return new ClientConnectMessage(*this);
 		case (mtClientDisconnect):
 			return new ClientDisconnectMessage(*this);
@@ -108,6 +130,12 @@ Message* MessageHeader::next() const {
 			return new ConnectionAcceptedMessage(*this);
 		case (mtPing):
 			return new PingMessage(*this);
+		case (mtTryToConnect):
+			return new TryToConnectMessage(*this);
+		case (mtStartGame):
+			return new StartGameMessage(*this);
+		case (mtTurn):
+			return new TurnMessage(*this);
 		default:
 			return NULL;
 	}
@@ -202,6 +230,42 @@ ClientDisconnectMessage::ClientDisconnectMessage(QString name, QColor color) {
 	this->info.color = color;
 	header.len = info.size();
 	header.type = mtClientDisconnect;
+}
+
+TurnMessage::TurnMessage(QString name, QColor color, int id, int x, int y) {
+	this->info.name = name;
+	this->info.color = color;
+	this->id = id;
+	this->x = x;
+	this->y = y;
+	header.len = info.size()+3*sizeof(int);
+	header.type = mtTurn;
+}
+
+QByteArray TurnMessage::serialize() const {
+	QByteArray result = info.serialize();//ClientMessage::serialize();
+	result.append(QByteArray::fromRawData((const char*)&id,sizeof(int)));
+	result.append(QByteArray::fromRawData((const char*)&x,sizeof(int)));
+	result.append(QByteArray::fromRawData((const char*)&y,sizeof(int)));
+	return header.serialize().append(result);
+}
+
+void TurnMessage::fill(const QByteArray& buffer) {
+	const char* data = buffer.data();
+	info.fill(data);
+	data+=info.size();
+	id = *((int*)data);
+	data+=sizeof(int);
+	x = *((int*)data);
+	data+=sizeof(int);
+	y = *((int*)data);
+	data+=sizeof(int);
+}
+
+TryToConnectMessage::TryToConnectMessage(ClientInfo info) {
+	this->info = info;
+	header.len = info.size();
+	header.type = mtTryToConnect;
 }
 
 ConnectionAcceptedMessage::ConnectionAcceptedMessage(int errorCode) {
