@@ -16,8 +16,8 @@ Game::Game(QWidget* widget):currplayer(0),running(false)
 	ui = dynamic_cast<Ui::MainWindow*>(widget);
 	if (ui==0) std::cerr<<"bug!!!!!!" << std::endl;
 	table = new Table(20,20);
-	QGraphicsScene* tablescene = new QGraphicsScene;
-	scenes.append(tablescene);
+	tablescene = new QGraphicsScene;
+	//scenes.append(tablescene);
 	tablescene->addItem(table);
 	ui->gvTable->setScene(tablescene);
 	connect(table,SIGNAL(turnComplete(QColor,int,int,int)),this,SLOT(turnDone(QColor,int,int,int)));
@@ -70,8 +70,10 @@ void Game::addPlayer(QString name,QColor color, PlayerType type)
 void Game::turnDone(QColor color, int id,int x,int y)
 {
 	if (dynamic_cast<Table*>(sender())) {
+		std::cerr << "111\n";
 		emit turnDone(players[currplayer]->getName(),color,id,x,y);
 	}
+	std::cerr << "td1\n";
 	players[currplayer]->turnComplete(color,id,x,y);
 	do {
 		currplayer=(currplayer+1)%players.size();
@@ -124,7 +126,9 @@ Game::~Game()
 		delete scenes[i];
 		//delete players[i];
 	}
-	delete table;
+	scenes.clear();
+	delete tablescene;
+	//delete table;
 	//delete ui;
 }
 
@@ -133,12 +137,19 @@ void Game::clear() {
 	{
 		//scenes[i]->deleteLater();
 		delete scenes[i];
+//		scenes.removeAt(1);
 		//delete players[i];
 	}
 	playersleft=0;
 	currplayer=0;
 	scenes.clear();
 	players.clear();
+	//QList<QLCDNumber*> *lcd = widget->findChild<QLCDNumber*>(playerscore+QString::number(i+1));
+	QList<QLCDNumber*> lcds = widget->findChildren<QLCDNumber*>();
+	for(int i=0;i<lcds.size();++i)
+	{
+		lcds[i]->setPalette(QPalette());
+	}
 //	delete table;
 }
 
@@ -162,7 +173,8 @@ bool operator==(const ClientInfo& a1,const ClientInfo& a2)
 
 void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 {
-	if (false)
+	std::cerr << players.size() << " " << clients.size() << " " << local.size() << std::endl;
+	if (!running)
 	{
 		int i=0;
 		clear();
@@ -240,4 +252,3 @@ bool Game::isStarted() const
 {
 	return running;
 }
-

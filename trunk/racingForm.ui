@@ -122,7 +122,7 @@
     <property name="title" >
      <string>Меню</string>
     </property>
-    <addaction name="actionReconnectToServer" />
+    <addaction name="actionStartGame" />
     <addaction name="actionDisconnectFromServer" />
     <addaction name="separator" />
     <addaction name="a_exit" />
@@ -143,6 +143,11 @@
   <action name="actionReconnectToServer" >
    <property name="text" >
     <string>Переподключиться к серверу</string>
+   </property>
+  </action>
+  <action name="actionStartGame" >
+   <property name="text" >
+    <string>Начать игру</string>
    </property>
   </action>
  </widget>

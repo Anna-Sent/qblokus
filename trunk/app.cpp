@@ -15,7 +15,6 @@ OptDialog::OptDialog(App* app) {
 
 App::App(QWidget *parent) {
 	setupUi(this);
-	game = new Game(this);
 	timer.setInterval(5000);
 	localtimer.setInterval(5000);
 	connect(&timer, SIGNAL(timeout()), this, SLOT(ping()));
@@ -23,13 +22,17 @@ App::App(QWidget *parent) {
 	//qRegisterMetaType<QAbstractSocket::SocketError>("QAbstractSocket::SocketError");
 	TCPSocket *clientConnection = new TCPSocket;
 	MessageReceiver *local_receiver=new MessageReceiver(clientConnection);
-	connect(local_receiver, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(chatMessageReceive(ChatMessage)));
-	connect(local_receiver, SIGNAL(playersListMessageReceive(PlayersListMessage)), this, SLOT(playersListMessageReceive(PlayersListMessage)));
+	connect(local_receiver, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(localChatMessageReceive(ChatMessage)));
+	connect(local_receiver, SIGNAL(playersListMessageReceive(PlayersListMessage)), this, SLOT(localPlayersListMessageReceive(PlayersListMessage)));
 	connect(local_receiver, SIGNAL(serverReadyMessageReceive(ServerReadyMessage)), this, SLOT(localServerReadyMessageReceive(ServerReadyMessage)));
 	connect(local_receiver, SIGNAL(clientConnectMessageReceive(ClientConnectMessage)), this, SLOT(localClientConnectMessageReceive(ClientConnectMessage)));
 	connect(local_receiver, SIGNAL(clientDisconnectMessageReceive(ClientDisconnectMessage)), this, SLOT(localClientDisconnectMessageReceive(ClientDisconnectMessage)));
 	connect(local_receiver, SIGNAL(connectionAcceptedMessageReceive(ConnectionAcceptedMessage)), this, SLOT(localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)));
 	connect(local_receiver, SIGNAL(pingMessageReceive(PingMessage)), this, SLOT(localPingMessageReceive(PingMessage)));
+
+	connect(local_receiver, SIGNAL(startGameMessageReceive(StartGameMessage)), this, SLOT(localStartGameMessageReceive(StartGameMessage)));
+	connect(local_receiver, SIGNAL(turnMessageReceive(TurnMessage)), this, SLOT(localTurnMessageReceive(TurnMessage)));
+
 	connect(clientConnection, SIGNAL(connected()), this, SLOT(connected()));
 	connect(clientConnection, SIGNAL(disconnected()), this, SLOT(disconnected()));
 	connect(clientConnection, SIGNAL(error()), this, SLOT(error()));
@@ -37,12 +40,42 @@ App::App(QWidget *parent) {
 	localClient.socket = clientConnection;
 	localClient.receiver = local_receiver;
 	connect(a_exit, SIGNAL(activated()), this, SLOT(exit()));
+	connect(actionStartGame, SIGNAL(activated()), this, SLOT(startGame()));
 	connect(actionDisconnectFromServer, SIGNAL(activated()), this, SLOT(disconnectFromServer()));
 	connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(sendMessage()));
 	connect(lineEdit, SIGNAL(returnPressed()), lineEdit, SLOT(clear()));
-	connect(actionReconnectToServer, SIGNAL(activated()), this, SLOT(reconnectToServer()));
 	dialog = new OptDialog(this);
 	dialog->show();
+}
+
+void App::turnDone(QString name,QColor color,int id,int x,int y) {
+	TurnMessage msg(name,color,id,x,y);
+	std::cerr << "td\n";
+	sendToAll(&msg);
+}
+
+void App::startGame() {
+	if (serverConnection.isListening()) {
+		if (clients.size()==3||clients.size()==4) {
+			game->start();
+			StartGameMessage msg;
+			sendToAll(&msg);
+		} else
+			QMessageBox::warning(this, "Warning", "Wait for 3 or 4 players");
+	} else
+		QMessageBox::warning(this, "Warning", "Only server can start the game");
+}
+
+void App::localStartGameMessageReceive(StartGameMessage msg) {
+	game->start();
+}
+
+void App::localTurnMessageReceive(TurnMessage msg) {
+	game->turnDone(msg.getColor(),msg.getId(),msg.getX(),msg.getY());
+}
+
+void App::remoteTurnMessageReceive(TurnMessage msg) {
+	sendToAll(&msg);
 }
 
 void App::perror(QString text) {
@@ -89,15 +122,13 @@ void App::remotePingMessageReceive(PingMessage) {
 		int j;
 		for (j = 0; j< clients.size() && r!=clients[j]->receiver; ++j) {}
 		if (j != clients.size()) {
-			clients[j]->lastpingtime.start();// = QTime::currentTime();
+			clients[j]->lastpingtime.start();
 		}
 	}
 }
 
 App::~App() {
 	delete dialog;
-	//delete local_receiver;
-	//clientConnection.close();
 	serverConnection.close();
 	timer.stop();
 	for (int j=0;j<clients.size();delete clients[j++]) {}
@@ -114,47 +145,18 @@ void OptDialog::toggled(bool checked) {
 		pbConnect->setText("Connect to server");
 }
 
-void App::reconnectToServer() {
-	// disconnect
-	bool isServer = false;
-	QString hostname = localClient.socket->getHostname();
-	quint16 port = localClient.socket->getPort();
-	localClient.socket->disconnectFromHost();
-	localtimer.stop();
-	if (serverConnection.isListening()) {
-		serverConnection.close();
-		timer.stop();
-		while (clients.size()>0) {
-			Client *client = clients[0];
-			clients.removeAt(0);
-			client->socket->close();
-			client->deleteLater();
-		}
-		clients.clear();
-		isServer = true;
-	}
-	// connect
-	if (isServer) {
-		bool listening = serverConnection.listen(port);
-		if (listening) {
-			timer.start();
-		} else {
-			QMessageBox::critical(this, "Error", serverConnection.errorString());
-			return;
-		}
-	}
-	localClient.socket->connectToHost(hostname, port);
-	localtimer.start();
-}
-
-void App::chatMessageReceive(ChatMessage msg) {
+void App::localChatMessageReceive(ChatMessage msg) {
 	textEdit->setTextColor(msg.getColor());
 	textEdit->append("("+QTime::currentTime().toString("hh:mm:ss")+") "+msg.getName()+":");
 	textEdit->setTextColor(Qt::black);
 	textEdit->append(msg.getText());
 }
 
-void App::playersListMessageReceive(PlayersListMessage msg) {
+void App::remoteChatMessageReceive(ChatMessage msg) {
+	sendToAll(&msg);
+}
+
+void App::localPlayersListMessageReceive(PlayersListMessage msg) {
 	listWidget->clear();
 	QList<ClientInfo> list = msg.getList();
 	QList<bool> isLocal;
@@ -177,11 +179,13 @@ void App::sendMessage() {
 		perror(QString::fromUtf8("Подключение утеряно"));
 }
 
-void App::getMessageFromOtherClient(QByteArray data) {
+void App::sendToAll(Message *msg) {
 	QList<Client*>::iterator i;
 	for (i = clients.begin(); i != clients.end(); ++i)
-		if ((*i)->socket->isConnected()&&(*i)->state==2)
-			(*i)->socket->write(data.data(), data.size());
+		if ((*i)->socket->isConnected()&&(*i)->state==2) {
+			cerr << "send " << (*i)->info.name.toStdString() <<endl;
+			msg->send((*i)->socket);//->write(data.data(), data.size());
+		}
 }
 
 void App::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage msg) {
@@ -191,6 +195,7 @@ void App::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage msg) {
 			case 1: perror(QString::fromUtf8("Этот цвет уже используется")); break;
 			case 2: perror(QString::fromUtf8("Этот ник уже используется")); break;
 			case 3: perror(QString::fromUtf8("Игра уже начата. Попробуйте подключиться позднее")); break;
+			case 4: perror(QString::fromUtf8("К игре уже подключились 4 игрока")); break;
 		}
 		localClient.socket->close();
 		localtimer.stop();
@@ -243,6 +248,9 @@ void OptDialog::connectBtnClicked() {
 		}
 		int port = sbPort->value();
 		close();
+		app->game = new Game(app);
+		//game signals
+		connect(app->game, SIGNAL(turnDone(QString,QColor,int,int,int)), app, SLOT(turnDone(QString,QColor,int,int,int)));
 		app->show();
 		app->localClient.socket->connectToHost(hostname, port);
 		app->localtimer.start();
@@ -254,6 +262,9 @@ void OptDialog::connectBtnClicked() {
 		app->timer.start();
 		if (listening) {
 			close();
+			app->game = new Game(app);
+			//game signals
+			connect(app->game, SIGNAL(turnDone(QString,QColor,int,int,int)), app, SLOT(turnDone(QString,QColor,int,int,int)));
 			app->show();
 			app->localClient.socket->connectToHost(hostname, port);
 			app->localtimer.start();
@@ -270,7 +281,7 @@ void App::connected() {
 }
 
 void App::localServerReadyMessageReceive(ServerReadyMessage) {
-	ClientConnectMessage msg(localClient.info.name, localClient.info.color);
+	TryToConnectMessage msg(localClient.info);
 	msg.send(localClient.socket);
 }
 
@@ -279,20 +290,20 @@ void App::sendPlayersList() {
 	for (int i=0;i<clients.size();++i)
 		list.append(clients[i]->info);
 	PlayersListMessage msg(list);
-	getMessageFromOtherClient(msg.serialize());
+	sendToAll(&msg);
 }
 
 void App::newConnection() {
-	pinfo("Connected yet another client");
+	//pinfo("Connected yet another client");
 	if (serverConnection.hasPendingConnections()) {
 		TCPSocket* s = serverConnection.nextPendingConnection();
 		MessageReceiver *rr = new MessageReceiver(s);
-		connect(rr, SIGNAL(getMessage(QByteArray)), this, SLOT(getMessageFromOtherClient(QByteArray)));
-		connect(rr, SIGNAL(clientConnectMessageReceive(ClientConnectMessage)), this, SLOT(remoteClientConnectMessageReceive(ClientConnectMessage)));
+		connect(rr, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(remoteChatMessageReceive(ChatMessage)));
+		connect(rr, SIGNAL(tryToConnectMessageReceive(TryToConnectMessage)), this, SLOT(remoteTryToConnectMessageReceive(TryToConnectMessage)));
 		connect(rr, SIGNAL(pingMessageReceive(PingMessage)), this, SLOT(remotePingMessageReceive(PingMessage)));
-
-		connect(s, SIGNAL(disconnected()), this, SLOT(otherClientDisconnected()));
-		connect(s, SIGNAL(error()), this, SLOT(errorFromOtherClient()));
+		connect(rr, SIGNAL(turnMessageReceive(TurnMessage)), this, SLOT(remoteTurnMessageReceive(TurnMessage)));
+		connect(s, SIGNAL(disconnected()), this, SLOT(remoteDisconnected()));
+		connect(s, SIGNAL(error()), this, SLOT(remoteError()));
 
 		Client *client = new Client;
 		client->socket = s;
@@ -304,13 +315,15 @@ void App::newConnection() {
 	}
 }
 
-void App::otherClientDisconnected() {
+void App::remoteDisconnected() {
 	TCPSocket *s = dynamic_cast<TCPSocket*>(sender());
 	if (s) {
 		int i;
 		for (i = 0; i < clients.size() && s != clients[i]->socket; ++i) {}
 		if (i != clients.size()) {
 			Client *client = clients[i];
+			ClientDisconnectMessage msg(client->info.name, client->info.color);
+			sendToAll(&msg);
 			clients.removeAt(i);
 			client->deleteLater();
 			sendPlayersList();
@@ -321,6 +334,7 @@ void App::otherClientDisconnected() {
 void App::disconnected() {
 	pinfo("Disconnected");
 	listWidget->clear();
+	delete game;
 }
 
 void App::error() {
@@ -330,7 +344,7 @@ void App::error() {
 	if (serverConnection.isListening()) { serverConnection.close(); timer.stop(); }
 }
 
-void App::errorFromOtherClient() {
+void App::remoteError() {
 	TCPSocket *s = dynamic_cast<TCPSocket*>(sender());
 	if (s) {
 		int i;
@@ -338,20 +352,20 @@ void App::errorFromOtherClient() {
 		if (i != clients.size()) {
 			perror("remote error "+s->errorString());
 			s->close();
-			ClientDisconnectMessage msg(clients[i]->info.name, clients[i]->info.color);
-			getMessageFromOtherClient(msg.serialize());
+			//ClientDisconnectMessage msg(clients[i]->info.name, clients[i]->info.color);
+			//sendToAll(&msg);
 		}
 	}
 }
 
-void App::remoteClientConnectMessageReceive(ClientConnectMessage msg) {
+void App::remoteTryToConnectMessageReceive(TryToConnectMessage msg) {
 	MessageReceiver *r = dynamic_cast<MessageReceiver*>(sender());
 	if (r) {
 		int j;
 		for (j = 0; j< clients.size() && r!=clients[j]->receiver; ++j) {}
 		if (j != clients.size()) {
-			textEdit->setTextColor(msg.getColor());
-			pinfo(msg.getName()+" connected remote");
+			//textEdit->setTextColor(msg.getColor());
+			//pinfo(msg.getName()+" connected remote");
 			int i, error=0;
 			for (i=0; i<clients.size()&&msg.getColor()!=clients[i]->info.color; ++i) {}
 			if (i!=clients.size())
@@ -361,12 +375,17 @@ void App::remoteClientConnectMessageReceive(ClientConnectMessage msg) {
 				error=2;
 			if (game->isStarted())
 				error=3;
+			if (clients.size()==4)
+				error=4;
 			ConnectionAcceptedMessage msg1(error);
 			msg1.send(clients[j]->socket);
 			if (!error) {
 				clients[j]->info.name = msg.getName();
 				clients[j]->info.color = msg.getColor();
 				clients[j]->state = 2;
+				ClientConnectMessage msg1(msg.getName(), msg.getColor());
+				sendToAll(&msg1);
+				cerr << "send client connect message"<<endl;
 				sendPlayersList();
 			} else {
 				Client *client = clients[j];
@@ -384,5 +403,5 @@ void App::localClientConnectMessageReceive(ClientConnectMessage msg) {
 
 void App::localClientDisconnectMessageReceive(ClientDisconnectMessage msg) {
 	textEdit->setTextColor(msg.getColor());
-	textEdit->append(msg.getName()+" connected");
+	textEdit->append(msg.getName()+" disconnected");
 }

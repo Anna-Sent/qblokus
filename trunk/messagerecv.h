@@ -7,7 +7,7 @@
 
 enum MessageType { mtHeader, mtChat, mtPlayersList,
 	mtClientConnect, mtClientDisconnect, mtServerReady,
-	mtConnectionAccepted, mtPing };
+	mtConnectionAccepted, mtPing, mtTryToConnect, mtStartGame, mtTurn };
 
 class TCPSocket;
 
@@ -78,6 +78,12 @@ class ClientMessage : public ComplexMessage {
 		void fill(const QByteArray&);
 };
 
+class TryToConnectMessage : public ClientMessage {
+	public:
+		TryToConnectMessage(const MessageHeader& header) {this->header=header;}
+		TryToConnectMessage(ClientInfo);
+};
+
 class ClientConnectMessage : public ClientMessage {
 	public:
 		ClientConnectMessage(const MessageHeader& header) {this->header=header;}
@@ -115,6 +121,26 @@ class ConnectionAcceptedMessage : public ComplexMessage {
 		int getCode() const {return errorCode;}
 };
 
+class StartGameMessage : public ComplexMessage {
+	private:
+	public:
+		StartGameMessage(const MessageHeader& header) {this->header=header;}
+		StartGameMessage() { header.len = 0; header.type = mtStartGame;}
+};
+
+class TurnMessage : public ClientMessage {
+private:
+	int id, x, y;
+public:
+	TurnMessage(const MessageHeader& header) {this->header=header;}
+	TurnMessage(QString, QColor, int id, int x, int y);
+	int getX() const {return x;}
+	int getY() const {return y;}
+	int getId() const {return id;}
+	QByteArray serialize() const;
+	void fill(const QByteArray&);
+};
+
 class MessageReceiver : public QObject {
 	Q_OBJECT
 	private:
@@ -129,10 +155,13 @@ class MessageReceiver : public QObject {
 	signals:
 		void chatMessageReceive(ChatMessage);
 		void playersListMessageReceive(PlayersListMessage);
+		void tryToConnectMessageReceive(TryToConnectMessage);
 		void clientConnectMessageReceive(ClientConnectMessage);
 		void clientDisconnectMessageReceive(ClientDisconnectMessage);
 		void getMessage(QByteArray);
 		void serverReadyMessageReceive(ServerReadyMessage);
 		void connectionAcceptedMessageReceive(ConnectionAcceptedMessage);
 		void pingMessageReceive(PingMessage);
+		void startGameMessageReceive(StartGameMessage);
+		void turnMessageReceive(TurnMessage);
 };
