@@ -259,7 +259,6 @@ void TurnMessage::fill(const QByteArray& buffer) {
 	x = *((int*)data);
 	data+=sizeof(int);
 	y = *((int*)data);
-	data+=sizeof(int);
 }
 
 TryToConnectMessage::TryToConnectMessage(ClientInfo info) {
