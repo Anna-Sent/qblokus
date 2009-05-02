@@ -34,7 +34,7 @@ void TableCell::dragEnterEvent(QGraphicsSceneDragDropEvent *event)
 		if (table)
 		{
 			QColor color = qVariantValue<QColor>(event->mimeData()->hasColor()?event->mimeData()->colorData():QColor(0,0,0));
-			result = table->Accept(xpos,ypos,tile,data.first,false,color);
+			result = table->Accept(xpos,ypos,tile,data.first,false,true,color);
 		}
 	}
 	if (result)
@@ -66,7 +66,7 @@ void TableCell::dropEvent(QGraphicsSceneDragDropEvent *event)
 		if (table)
 		{
 			QColor color = qVariantValue<QColor>(event->mimeData()->hasColor()?event->mimeData()->colorData():QColor(0,0,0));
-			result = table->Accept(xpos,ypos,tile,data.first,true,color);
+			result = table->Accept(xpos,ypos,tile,data.first,true,true,color);
 		}
 	}
 	if (result)
@@ -125,7 +125,7 @@ std::string readColor(QColor color)
 	return res.toStdString();
 }
 
-bool Table::Accept(int x,int y,const Tile& what,int id,bool really,QColor color)
+bool Table::Accept(int x,int y,const Tile& what,int id,bool really,bool local,QColor color)
 //bool Table::Accept(int x,int y,Tile what,bool really,QColor color)
 
 {
@@ -195,7 +195,7 @@ bool Table::Accept(int x,int y,const Tile& what,int id,bool really,QColor color)
 		}
 	}
 //	std::cout << "!accepting\n";
-	if (really)
+	if (really&&local)
 	{
 		emit turnComplete(color,id,x,y);
 	}

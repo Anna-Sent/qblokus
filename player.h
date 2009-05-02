@@ -18,11 +18,11 @@ class Player:public QObject, public QGraphicsItem
 		QColor getColor() const {return color;}
 		const QString& getName() const;
 		void setName(const QString&);
+		ColorItem* getTile(int i) const {return items[i];}
 	public slots:
 		virtual void startTurn();
 		virtual void turnComplete(QColor color,int item,int x,int y);
 		virtual void surrender();
-
 	signals:
 		void turnComplete();
 		void scoreChanged(int score);

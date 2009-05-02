@@ -35,7 +35,7 @@ void Game::addPlayer(QString name,QColor color, PlayerType type)
 			player = new LocalPlayer(color);
 			break;
 		case(ptNetwork):
-			player = new NetworkPlayer(color);
+			player = new NetworkPlayer(color,table);
 			break;
 		default:
 			return;

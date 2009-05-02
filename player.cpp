@@ -114,8 +114,8 @@ void Player::turnComplete(QColor color,int item,int x,int y)
 {
 	Q_UNUSED(x);
 	Q_UNUSED(y);
-	--tilesleft;
 	if (color!=this->color) return;
+	--tilesleft;
 	items[item]->hide();
 	Tile* tile = items[item];
 	score+=tile->score();
