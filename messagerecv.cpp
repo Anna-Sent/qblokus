@@ -21,7 +21,6 @@ void MessageReceiver::readyRead() {
 	buffer.append(QByteArray(tmp,len));
 	while (current->getLength()<=buffer.size())
 	{
-		std::cerr << current->getLength() << std::endl;
 		current->fill(buffer);
 		{
 			ChatMessage *msg;

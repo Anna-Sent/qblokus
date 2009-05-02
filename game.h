@@ -44,4 +44,5 @@ class Game:public QObject
 		bool running;
 		int playersleft;
 		bool isserver;
+		void retirePlayer(int);
 };

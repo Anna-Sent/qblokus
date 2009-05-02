@@ -51,7 +51,8 @@ App::App(QWidget *parent) {
 void App::turnDone(QString name,QColor color,int id,int x,int y) {
 	TurnMessage msg(name,color,id,x,y);
 	std::cerr << "td\n";
-	sendToAll(&msg);
+	msg.send(localClient.socket);
+	//sendToAll(&msg);
 }
 
 void App::startGame() {

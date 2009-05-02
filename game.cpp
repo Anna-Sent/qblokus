@@ -69,6 +69,7 @@ void Game::addPlayer(QString name,QColor color, PlayerType type)
 
 void Game::turnDone(QColor color, int id,int x,int y)
 {
+	if (color!=players[currplayer]->getColor()) return;
 	if (dynamic_cast<Table*>(sender())) {
 		std::cerr << "111\n";
 		emit turnDone(players[currplayer]->getName(),color,id,x,y);
@@ -79,6 +80,7 @@ void Game::turnDone(QColor color, int id,int x,int y)
 		currplayer=(currplayer+1)%players.size();
 	} while(players[currplayer]->getSurrendered());
 	players[currplayer]->startTurn();
+	std::cerr << "===== " << currplayer << " ====\n";
 }
 
 void Game::playerRetired()
@@ -120,13 +122,14 @@ Game::~Game()
 #ifdef DEBUG_DESTRUCTORS
 	std::cerr << "Game over" << std::endl;
 #endif
-	for (int i=0;i<scenes.size();++i)
+/*	for (int i=0;i<scenes.size();++i)
 	{
 		//scenes[i]->deleteLater();
 		delete scenes[i];
 		//delete players[i];
 	}
-	scenes.clear();
+	scenes.clear();*/
+	clear();
 	delete tablescene;
 	//delete table;
 	//delete ui;
@@ -171,6 +174,32 @@ bool operator==(const ClientInfo& a1,const ClientInfo& a2)
 	return a1.name==a2.name&&a1.color==a2.color;
 }
 
+void Game::retirePlayer(int i)
+{
+	std::cerr << i << " ======= " << currplayer << std::endl; 
+	if (currplayer==i) 
+	{
+		playerRetired();
+		return;
+	}
+	Player *player=players[i];
+	if (!player->surrendered)
+	{
+		player->surrendered=true;
+		--playersleft;
+	}
+	if (playersleft==1)
+	{
+		//winner(players[currplayer]);
+		int msp=0;
+		for(int p=1;p<players.size();++p)
+			if (players[p]->getScore()>players[msp]->getScore()) msp=p;
+		winner(players[msp]);
+	}
+	player->update();
+
+}
+
 void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 {
 	std::cerr << players.size() << " " << clients.size() << " " << local.size() << std::endl;
@@ -199,21 +228,7 @@ void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 				{
 					for(int i=pl;i<players.size();++i)
 					{
-						Player *player=players[i];
-						if (!player->surrendered)
-						{
-							player->surrendered=true;
-							--playersleft;
-						}
-						if (playersleft==1)
-						{
-							//winner(players[currplayer]);
-							int msp=0;
-							for(int p=1;p<players.size();++p)
-								if (players[p]->getScore()>players[msp]->getScore()) msp=p;
-							winner(players[msp]);
-						}
-						player->update();
+						retirePlayer(i);
 					}
 					pl=players.size();
 				}
@@ -226,21 +241,7 @@ void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 				}
 				else
 				{
-					Player *player=players[pl];
-					if (!player->surrendered)
-					{
-						player->surrendered=true;
-						--playersleft;
-					}
-					player->update();
-						if (playersleft==1)
-					{
-						//winner(players[currplayer]);
-						int msp=0;
-						for(int p=1;p<players.size();++p)
-							if (players[p]->getScore()>players[msp]->getScore()) msp=p;
-						winner(players[msp]);
-					}
+					retirePlayer(pl);
 					++pl;			
 				}
 			}
