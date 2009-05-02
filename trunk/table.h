@@ -84,10 +84,10 @@ class Table : public QObject, public QGraphicsItem
 	QRectF boundingRect() const;
 	protected:
 	std::vector<std::vector<TableCell*> > cells;
-     void paint(QPainter *painter,
-            const QStyleOptionGraphicsItem *option, QWidget *widget);
+     	void paint(QPainter *painter,
+        const QStyleOptionGraphicsItem *option, QWidget *widget);
      	signals:
-     		void turnComplete(QColor color,int id,int x,int y);
+     		void turnComplete(QColor color,QString mask,int id,int x,int y);
 	private:
      		int width,height;
 };

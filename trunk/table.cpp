@@ -197,8 +197,9 @@ bool Table::Accept(int x,int y,const Tile& what,int id,bool really,bool local,QC
 //	std::cout << "!accepting\n";
 	if (really&&local)
 	{
-		emit turnComplete(color,id,x,y);
+		emit turnComplete(color,what.getAsQString(),id,x,y);
 	}
+	if (really) std::cerr << what << std::endl;
 
 	if (inAngle||touchAngles)
 	{

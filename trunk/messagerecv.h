@@ -74,8 +74,8 @@ class ClientMessage : public ComplexMessage {
 		QString getName() const {return info.name;}
 		QColor getColor() const {return info.color;}
 		ClientInfo getInfo() const {return info;}
-		QByteArray serialize() const;
-		void fill(const QByteArray&);
+		virtual QByteArray serialize() const;
+		virtual void fill(const QByteArray&);
 };
 
 class TryToConnectMessage : public ClientMessage {
@@ -131,12 +131,14 @@ class StartGameMessage : public ComplexMessage {
 class TurnMessage : public ClientMessage {
 private:
 	int id, x, y;
+	QString mask;
 public:
 	TurnMessage(const MessageHeader& header) {this->header=header;}
-	TurnMessage(QString, QColor, int id, int x, int y);
+	TurnMessage(QString, QColor, QString,int id, int x, int y);
 	int getX() const {return x;}
 	int getY() const {return y;}
 	int getId() const {return id;}
+	QString getMask() const {return mask;}
 	QByteArray serialize() const;
 	void fill(const QByteArray&);
 };

@@ -48,8 +48,8 @@ App::App(QWidget *parent) {
 	dialog->show();
 }
 
-void App::turnDone(QString name,QColor color,int id,int x,int y) {
-	TurnMessage msg(name,color,id,x,y);
+void App::turnDone(QString name,QColor color,QString tile,int id,int x,int y) {
+	TurnMessage msg(name,color,tile,id,x,y);
 	std::cerr << "td\n";
 	msg.send(localClient.socket);
 	//sendToAll(&msg);
@@ -72,7 +72,7 @@ void App::localStartGameMessageReceive(StartGameMessage msg) {
 }
 
 void App::localTurnMessageReceive(TurnMessage msg) {
-	game->turnDone(msg.getColor(),msg.getId(),msg.getX(),msg.getY());
+	game->turnDone(msg.getColor(),msg.getMask(),msg.getId(),msg.getX(),msg.getY());
 }
 
 void App::remoteTurnMessageReceive(TurnMessage msg) {
@@ -251,7 +251,7 @@ void OptDialog::connectBtnClicked() {
 		close();
 		app->game = new Game(app);
 		//game signals
-		connect(app->game, SIGNAL(turnDone(QString,QColor,int,int,int)), app, SLOT(turnDone(QString,QColor,int,int,int)));
+		connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
 		app->show();
 		app->localClient.socket->connectToHost(hostname, port);
 		app->localtimer.start();
@@ -265,7 +265,7 @@ void OptDialog::connectBtnClicked() {
 			close();
 			app->game = new Game(app);
 			//game signals
-			connect(app->game, SIGNAL(turnDone(QString,QColor,int,int,int)), app, SLOT(turnDone(QString,QColor,int,int,int)));
+			connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
 			app->show();
 			app->localClient.socket->connectToHost(hostname, port);
 			app->localtimer.start();

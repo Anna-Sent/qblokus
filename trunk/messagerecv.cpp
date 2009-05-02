@@ -231,13 +231,14 @@ ClientDisconnectMessage::ClientDisconnectMessage(QString name, QColor color) {
 	header.type = mtClientDisconnect;
 }
 
-TurnMessage::TurnMessage(QString name, QColor color, int id, int x, int y) {
+TurnMessage::TurnMessage(QString name, QColor color,QString tile, int id, int x, int y) {
 	this->info.name = name;
 	this->info.color = color;
 	this->id = id;
 	this->x = x;
 	this->y = y;
-	header.len = info.size()+3*sizeof(int);
+	this->mask=tile;
+	header.len = info.size()+4*sizeof(int)+mask.toUtf8().size();
 	header.type = mtTurn;
 }
 
@@ -246,6 +247,10 @@ QByteArray TurnMessage::serialize() const {
 	result.append(QByteArray::fromRawData((const char*)&id,sizeof(int)));
 	result.append(QByteArray::fromRawData((const char*)&x,sizeof(int)));
 	result.append(QByteArray::fromRawData((const char*)&y,sizeof(int)));
+	QByteArray tmp = mask.toUtf8();
+	int size = tmp.size();
+	result.append(QByteArray::fromRawData((const char*)&size,sizeof(int)));
+	result.append(tmp);
 	return header.serialize().append(result);
 }
 
@@ -258,6 +263,10 @@ void TurnMessage::fill(const QByteArray& buffer) {
 	x = *((int*)data);
 	data+=sizeof(int);
 	y = *((int*)data);
+	data+=sizeof(int);
+	int textlen = *((int*)data);
+	data += sizeof(int);
+	mask = QString::fromUtf8(data,textlen);
 }
 
 TryToConnectMessage::TryToConnectMessage(ClientInfo info) {
@@ -284,3 +293,4 @@ void ConnectionAcceptedMessage::fill(const QByteArray& buffer) {
 	::bcopy(data, (void*)(&errorCode), sizeof(int));
 	std::cerr << "accepted: " << errorCode << endl;
 }
+

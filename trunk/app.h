@@ -82,7 +82,7 @@ public slots:
 	void localStartGameMessageReceive(StartGameMessage);
 	void remoteTurnMessageReceive(TurnMessage);
 	
-	void turnDone(QString,QColor,int,int,int);
+	void turnDone(QString,QColor,QString,int,int,int);
 	//void remoteStartGameMessageReceive(StartGameMessage);
 };
 #endif
