@@ -56,7 +56,7 @@ void App::turnDone(QString name,QColor color,int id,int x,int y) {
 
 void App::startGame() {
 	if (serverConnection.isListening()) {
-		if (clients.size()==3||clients.size()==4) {
+		if (clients.size()>=2) {
 			game->start();
 			StartGameMessage msg;
 			sendToAll(&msg);
