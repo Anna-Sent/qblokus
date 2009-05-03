@@ -3,6 +3,7 @@
 #include "ui_racingForm.h"
 #include "ui_optionsDialog.h"
 #include "socket.h"
+#include "udpsocket.h"
 #include "messagerecv.h"
 #include <iostream>
 #include "game.h"
@@ -17,10 +18,12 @@ public:
 	OptDialog(App* app);
 private:
 	App *app;
+	UDPSocket socket;
 public slots:
     void connectBtnClicked();
     void searchBtnClicked();
 	void toggled(bool);
+	void getServersList();
 };
 
 class Client : public QObject {
@@ -44,6 +47,7 @@ private:
 	OptDialog *dialog;
 	Client localClient;
 	TCPServer serverConnection;
+	UDPSocket listener;
 	QList<Client*> clients;
 	QTimer timer;
 	QTimer localtimer;
@@ -55,6 +59,7 @@ private:
 public:
 	Game *game;
 public slots:
+	void readyReadUDP();
 	void startGame();
 	void ping();
 	void localPingMessageReceive(PingMessage);

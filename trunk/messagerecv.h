@@ -10,6 +10,7 @@ enum MessageType { mtHeader, mtChat, mtPlayersList,
 	mtConnectionAccepted, mtPing, mtTryToConnect, mtStartGame, mtTurn, mtSurrender };
 
 class TCPSocket;
+class UDPSocket;
 
 class Message {
 	protected:

@@ -4,14 +4,16 @@ SOURCES = socket.cpp \
 	main.cpp \
 	app.cpp \
 	messagerecv.cpp \
-	clientinfo.cpp
+	clientinfo.cpp \
+	udpsocket.cpp
 
 HEADERS = socket.h \
 	ui_racingForm.h \
 	ui_optionsDialog.h \
 	app.h \
 	messagerecv.h \
-	clientinfo.h
+	clientinfo.h \
+	udpsocket.h
 
 SOURCES += coloritem.cpp \
 	tile.cpp \

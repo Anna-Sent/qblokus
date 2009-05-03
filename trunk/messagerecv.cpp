@@ -1,5 +1,7 @@
+#include <stdlib.h>
 #include "messagerecv.h"
 #include "socket.h"
+#include "udpsocket.h"
 #include <iostream>
 using namespace std;
 
@@ -303,4 +305,3 @@ void ConnectionAcceptedMessage::fill(const QByteArray& buffer) {
 	::bcopy(data, (void*)(&errorCode), sizeof(int));
 	std::cerr << "accepted: " << errorCode << endl;
 }
-
