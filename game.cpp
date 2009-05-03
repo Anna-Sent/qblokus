@@ -210,8 +210,21 @@ void Game::start()
 void Game::winner(Player* winner)
 {
 	//std::cerr << winner->getName().toStdString() << "\n";
+	QString winners;
+	int count=0;
+	for(int i=0;i<players.size();++i)
+	{
+		if (players[i]->getScore()==winner->getScore())
+		{
+			winners.append(players[i]->getName()+" ");
+			++count;
+		}
+	}
 	QMessageBox msgBox;
-	msgBox.setText(QString::fromUtf8("Победитель: ")+winner->getName());
+	if (count==1)
+		msgBox.setText(QString::fromUtf8("Победитель: ")+winners);
+	else
+		msgBox.setText(QString::fromUtf8("Победители: ")+winners);
 	msgBox.exec();
 	emit gameOver(winner->getName(),winner->getScore(),winner->getColor());
 }
