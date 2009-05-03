@@ -461,7 +461,7 @@ void App::remoteTryToConnectMessageReceive(TryToConnectMessage msg) {
 				error=2;
 			if (game->isStarted())
 				error=3;
-			if (clients.size()==4)
+			if (clients.size()>4)
 				error=4;
 			ConnectionAcceptedMessage msg1(error);
 			msg1.send(clients[j]->socket);
