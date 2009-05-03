@@ -78,8 +78,8 @@ void TCPSocket::close() {
 		::shutdown(_d,2);
 		::close(_d);
 		_d = 0;
-		if (isRunning()) wait();
 		buffer_lock.unlock();
+		if (isRunning()) wait();
 		if (buffer) {
 			free(buffer);
 			buffer=NULL;

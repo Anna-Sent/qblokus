@@ -2,6 +2,7 @@
 #include <QObject>
 #include <QString>
 #include <QThread>
+#include <QMutex>
 #define DATAGRAM_SIZE 512
 
 class UDPSocket: public QThread {
@@ -9,7 +10,7 @@ class UDPSocket: public QThread {
 	public:
 		UDPSocket();
 		virtual ~UDPSocket();
-		qint64 write ( const char * data, qint64 maxSize );
+		//qint64 write ( const char * data, qint64 maxSize );
 		bool hasPendingDatagrams () const {return buffer_size>0;}
 		qint64 pendingDatagramSize () const {return buffer_size;}
 		qint64 readDatagram ( char * data, qint64 maxSize, QString * address = 0, quint16 * port = 0 );
@@ -28,6 +29,7 @@ class UDPSocket: public QThread {
 		char buffer[DATAGRAM_SIZE];
 		sockaddr_in sender_addr;
 		quint16 port;
+		QMutex buffer_lock;
 	protected:
 		void run();
 	signals:
