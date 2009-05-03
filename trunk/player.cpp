@@ -3,7 +3,7 @@
 #include <QPainter>
 #include <iostream>
 
-Player::Player(QColor clr,int wid,int hei , QGraphicsItem * parent, QGraphicsScene * scene):QGraphicsItem(parent,scene), height(wid),width(hei),color(clr),name(""),score(0),surrendered(false), active(false)
+Player::Player(QColor clr,int wid,int hei , QGraphicsItem * parent, QGraphicsScene * scene):QGraphicsItem(parent,scene), height(wid),width(hei),color(clr),name(""),score(0),surrendered(false), active(false), lastactive(true)
 {
 
 	char const* cTiles[] = { "1", "11", "11|01","111","11|11","010|111","1111","001|111","011|110","1000|1111","010|010|111","100|100|111","0111|1100","001|111|100","1|1|1|1|1","10|11|11","011|110|100","11|10|11","011|110|010","010|111|010","0100|1111"};
@@ -93,11 +93,15 @@ void Player::activateAll()
 
 void Player::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
-	if (active)
+	if (active!=lastactive)
 	{
-		scene()->setBackgroundBrush(QBrush(color.light(180)));
-	} else
-		scene()->setBackgroundBrush(Qt::NoBrush);
+		if (active)
+		{
+			scene()->setBackgroundBrush(QBrush(color.light(180)));
+		} else
+			scene()->setBackgroundBrush(Qt::NoBrush);
+		lastactive=active;
+	}
 	if (surrendered)
 		painter->drawText(boundingRect(),Qt::AlignCenter,QString::fromUtf8("Игрок сдался"));
 	if (tilesleft==0)
