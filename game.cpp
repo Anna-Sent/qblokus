@@ -173,6 +173,7 @@ void Game::clear() {
 
 void Game::start()
 {
+	if (running) return;
 	if (players.size()>0)
 		players[0]->startTurn();
 	running=true;

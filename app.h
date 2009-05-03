@@ -81,8 +81,11 @@ public slots:
 	void localTurnMessageReceive(TurnMessage);
 	void localStartGameMessageReceive(StartGameMessage);
 	void remoteTurnMessageReceive(TurnMessage);
-	
+	void localSurrenderMessageReceive(SurrenderMessage);
+	void remoteSurrenderMessageReceive(SurrenderMessage);
+
 	void turnDone(QString,QColor,QString,int,int,int);
+	void playerSurrendered(QString,QColor);
 	//void remoteStartGameMessageReceive(StartGameMessage);
 };
 #endif
