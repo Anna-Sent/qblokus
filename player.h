@@ -39,6 +39,8 @@ class Player:public QObject, public QGraphicsItem
 		bool surrendered;
 		bool active;
 		friend class Game;
+	private:
+		bool lastactive;
 };
 #endif
 
