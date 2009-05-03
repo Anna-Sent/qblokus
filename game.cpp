@@ -7,6 +7,7 @@
 #include "ui_racingForm.h"
 #include <iostream>
 #include <QColor>
+#include <QMessageBox>
 #include "clientinfo.h"
 
 Game::Game(QWidget* widget):currplayer(0),running(false)
@@ -84,9 +85,24 @@ void Game::turnDone(QColor color, QString tile,int id,int x,int y)
 
 void Game::playerRetired()
 {
+	if (!running) return;
 	if (sender()&&dynamic_cast<QPushButton*>(sender())) {
 		LocalPlayer* player = dynamic_cast<LocalPlayer*>(players[currplayer]);
 		if (!player) return;
+		//confirm
+		QMessageBox msgBox;
+		msgBox.setText(QString::fromUtf8("Похоже вы хотите сдаться."));
+		msgBox.setInformativeText(QString::fromUtf8("Вы действительно хотите сдаться и закончить игру?"));
+		msgBox.setStandardButtons(QMessageBox::Yes|QMessageBox::No);
+		msgBox.setDefaultButton(QMessageBox::No);
+		msgBox.setIcon(QMessageBox::Warning);
+		int ret = msgBox.exec();
+		switch(ret) {
+			case(QMessageBox::No):{
+				return;
+			}
+			case(QMessageBox::Yes):break;
+		}
 		emit playerRetired(players[currplayer]->getName(),players[currplayer]->getColor());
 	}
 	Player* player = players[currplayer];
