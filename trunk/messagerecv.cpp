@@ -92,6 +92,14 @@ void MessageReceiver::readyRead() {
 				//emit getMessage(msg->serialize());
 			}
 		}
+		{
+			SurrenderMessage *msg;
+			if ((msg=dynamic_cast<SurrenderMessage*>(current))) {
+				emit surrenderMessageReceive(*msg);
+				//emit getMessage(msg->serialize());
+			}
+		}
+
 		buffer.remove(0,current->getLength());
 		Message* old = current;
 		current = current->next();
@@ -135,6 +143,8 @@ Message* MessageHeader::next() const {
 			return new StartGameMessage(*this);
 		case (mtTurn):
 			return new TurnMessage(*this);
+		case (mtSurrender):
+			return new SurrenderMessage(*this);
 		default:
 			return NULL;
 	}

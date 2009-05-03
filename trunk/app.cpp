@@ -32,6 +32,7 @@ App::App(QWidget *parent) {
 
 	connect(local_receiver, SIGNAL(startGameMessageReceive(StartGameMessage)), this, SLOT(localStartGameMessageReceive(StartGameMessage)));
 	connect(local_receiver, SIGNAL(turnMessageReceive(TurnMessage)), this, SLOT(localTurnMessageReceive(TurnMessage)));
+	connect(local_receiver, SIGNAL(surrenderMessageReceive(SurrenderMessage)), this, SLOT(localSurrenderMessageReceive(SurrenderMessage)));
 
 	connect(clientConnection, SIGNAL(connected()), this, SLOT(connected()));
 	connect(clientConnection, SIGNAL(disconnected()), this, SLOT(disconnected()));
@@ -50,9 +51,12 @@ App::App(QWidget *parent) {
 
 void App::turnDone(QString name,QColor color,QString tile,int id,int x,int y) {
 	TurnMessage msg(name,color,tile,id,x,y);
-	std::cerr << "td\n";
 	msg.send(localClient.socket);
 	//sendToAll(&msg);
+}
+void App::localSurrenderMessageReceive(SurrenderMessage)
+{
+	game->playerRetired();
 }
 
 void App::startGame() {
@@ -76,6 +80,11 @@ void App::localTurnMessageReceive(TurnMessage msg) {
 }
 
 void App::remoteTurnMessageReceive(TurnMessage msg) {
+	sendToAll(&msg);
+}
+
+void App::remoteSurrenderMessageReceive(SurrenderMessage msg)
+{
 	sendToAll(&msg);
 }
 
@@ -252,6 +261,7 @@ void OptDialog::connectBtnClicked() {
 		app->game = new Game(app);
 		//game signals
 		connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
+		connect(app->game, SIGNAL(playerRetired(QString, QColor)), app, SLOT(playerSurrendered(QString,QColor)));
 		app->show();
 		app->localClient.socket->connectToHost(hostname, port);
 		app->localtimer.start();
@@ -276,6 +286,13 @@ void OptDialog::connectBtnClicked() {
 	}
 	//app->game = new Game(app);
 }
+
+void App::playerSurrendered(QString name,QColor color)
+{
+	SurrenderMessage msg(name,color);
+	msg.send(localClient.socket);
+}
+
 
 void App::connected() {
 	pinfo("Connected");
@@ -303,6 +320,7 @@ void App::newConnection() {
 		connect(rr, SIGNAL(tryToConnectMessageReceive(TryToConnectMessage)), this, SLOT(remoteTryToConnectMessageReceive(TryToConnectMessage)));
 		connect(rr, SIGNAL(pingMessageReceive(PingMessage)), this, SLOT(remotePingMessageReceive(PingMessage)));
 		connect(rr, SIGNAL(turnMessageReceive(TurnMessage)), this, SLOT(remoteTurnMessageReceive(TurnMessage)));
+		connect(rr, SIGNAL(surrenderMessageReceive(SurrenderMessage)), this, SLOT(remoteSurrenderMessageReceive(SurrenderMessage)));
 		connect(s, SIGNAL(disconnected()), this, SLOT(remoteDisconnected()));
 		connect(s, SIGNAL(error()), this, SLOT(remoteError()));
 

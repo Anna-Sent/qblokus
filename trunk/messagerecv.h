@@ -7,7 +7,7 @@
 
 enum MessageType { mtHeader, mtChat, mtPlayersList,
 	mtClientConnect, mtClientDisconnect, mtServerReady,
-	mtConnectionAccepted, mtPing, mtTryToConnect, mtStartGame, mtTurn };
+	mtConnectionAccepted, mtPing, mtTryToConnect, mtStartGame, mtTurn, mtSurrender };
 
 class TCPSocket;
 
@@ -143,6 +143,22 @@ public:
 	void fill(const QByteArray&);
 };
 
+class SurrenderMessage : public ClientMessage {
+	public:
+		SurrenderMessage(QString name, QColor color)
+		{
+			info.name=name;
+			info.color=color;
+			header.type=mtSurrender;
+			header.len=info.size();
+		}
+		SurrenderMessage(const MessageHeader& header)
+		{
+			this->header=header;
+		}
+		
+};
+
 class MessageReceiver : public QObject {
 	Q_OBJECT
 	private:
@@ -166,4 +182,5 @@ class MessageReceiver : public QObject {
 		void pingMessageReceive(PingMessage);
 		void startGameMessageReceive(StartGameMessage);
 		void turnMessageReceive(TurnMessage);
+		void surrenderMessageReceive(SurrenderMessage);
 };
