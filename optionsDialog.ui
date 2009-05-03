@@ -95,7 +95,7 @@
          <item row="0" column="0" >
           <widget class="QPushButton" name="pbSearch" >
            <property name="text" >
-            <string>Search for game servers</string>
+            <string>Start search</string>
            </property>
           </widget>
          </item>

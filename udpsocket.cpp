@@ -22,10 +22,10 @@ UDPSocket::~UDPSocket() {
 	close();
 }
 
-qint64 UDPSocket::write ( const char * data, qint64 maxSize ) {
+/*qint64 UDPSocket::write ( const char * data, qint64 maxSize ) {
 	socklen_t addrlen = sizeof(bound_addr);
 	return ::sendto(_d, (const void*)data, maxSize, 0, (sockaddr*)&bound_addr, addrlen);
-}
+}*/
 
 qint64 UDPSocket::readDatagram ( char * data, qint64 maxSize, QString * address, quint16 * port ) {
 	int len = buffer_size<maxSize?buffer_size:maxSize;
@@ -33,16 +33,19 @@ qint64 UDPSocket::readDatagram ( char * data, qint64 maxSize, QString * address,
 	if (address)
 		*address = QString::fromUtf8(inet_ntoa(sender_addr.sin_addr));
 	if (port)
-		*port = sender_addr.sin_port;
+		*port = ntohs(sender_addr.sin_port);
 	buffer_size = 0;
+	buffer_lock.unlock();
 	return len;
 }
 
 void UDPSocket::close() {
-	if (_d>0) {
+	if (_d > 0) {
 		::shutdown(_d,2);
 		::close(_d);
 		_d = 0;
+		buffer_lock.unlock();
+		if (isRunning()) wait();
 	}
 }
 
@@ -61,6 +64,7 @@ qint64 UDPSocket::writeDatagram ( const char * data, qint64 size, const uint32_t
 	remote_addr.sin_addr.s_addr = htonl(address);
 	remote_addr.sin_port = htons(port);
 	socklen_t addrlen = sizeof(remote_addr);
+	cerr<<"send to "<<inet_ntoa(remote_addr.sin_addr)<<" port "<<remote_addr.sin_port<<endl;
 	return ::sendto(_d, (const void*)data, size, 0, (sockaddr*)&remote_addr, addrlen);
 }
 
@@ -75,6 +79,7 @@ qint64 UDPSocket::writeDatagram ( const char * data, qint64 size, QString addres
     remote_addr.sin_family = hp->h_addrtype;
     remote_addr.sin_port = htons(port);
 	socklen_t addrlen = sizeof(remote_addr);
+	cerr<<"send to "<<inet_ntoa(remote_addr.sin_addr)<<" port "<<remote_addr.sin_port<<endl;
 	return ::sendto(_d, (const void*)data, size, 0, (sockaddr*)&remote_addr, addrlen);
 }
 
@@ -109,10 +114,12 @@ void UDPSocket::run() {
 	socklen_t addrlen = sizeof(sender_addr);
 	while (_d>0) {
 		cerr<<"start wait"<<endl;
+		buffer_lock.lock();
 		buffer_size = ::recvfrom(_d, (void*)buffer, DATAGRAM_SIZE, 0, (sockaddr*)&sender_addr, &addrlen);
-		cerr<<"something "<<buffer_size<<endl;
+		cerr<<"receive from "<<inet_ntoa(sender_addr.sin_addr)<<" port "<<sender_addr.sin_port<<endl;
 		perror(NULL);
 		if (buffer_size>0) emit readyRead();
 		else buffer_size = 0;
    	}
+   	buffer_lock.unlock();
 }

@@ -12,6 +12,7 @@ OptDialog::OptDialog(App* app) {
 	connect(pbConnect, SIGNAL(clicked()), this, SLOT(connectBtnClicked()));
 	connect(cbCreateServer, SIGNAL(toggled(bool)), this, SLOT(toggled(bool)));
 	connect(&socket, SIGNAL(readyRead()), this, SLOT(getServersList()));
+	state = 0;
 }
 
 App::App(QWidget *parent) {
@@ -60,7 +61,6 @@ void App::readyReadUDP() {
 			QString address;
 			quint16 port;
 			listener.readDatagram((char*)&data, datagramSize, &address, &port);
-			cerr << port << " is port get by listener" << endl;
 			if (data == 110807) {
 				QList<ClientInfo> list;
 				for (int i=0;i<clients.size();++i)
@@ -68,7 +68,7 @@ void App::readyReadUDP() {
 				PlayersListMessage msg(list);
 				QByteArray data = msg.serialize();
 				int res = listener.writeDatagram(data.data(), data.size(), address, port);
-				cerr << "send " << res << "bytes to "<<
+				cerr << "send " << res << " bytes to "<<
 				address.toUtf8().data()<<" on port "<<port<<endl;
 			}
 		}
@@ -90,14 +90,21 @@ void OptDialog::getServersList() {
 }
 
 void OptDialog::searchBtnClicked() {
-	quint16 port = sbPort->value();
-	socket.bind(INADDR_ANY, 0);
-	int query = 110807;
-	for (int i=0;i<4;++i) {
-		socket.writeDatagram((char*)&query, sizeof(query), INADDR_BROADCAST, port);
-		::sleep(1);
+	if (state==0) {
+		lwServersList->clear();
+		quint16 port = sbPort->value();
+		pbSearch->setText("Stop search");
+		state = 1;
+		socket.bind(INADDR_ANY, 0);
+		int query = 110807;
+		for (int i=0;i<3;++i) {
+			socket.writeDatagram((char*)&query, sizeof(query), INADDR_BROADCAST, port);s
+		}
+	} else {
+		socket.close();
+		state = 0;
+		pbSearch->setText("Start search");
 	}
-	socket.close();
 }
 
 void App::turnDone(QString name,QColor color,QString tile,int id,int x,int y) {
@@ -105,9 +112,9 @@ void App::turnDone(QString name,QColor color,QString tile,int id,int x,int y) {
 	msg.send(localClient.socket);
 	//sendToAll(&msg);
 }
-void App::localSurrenderMessageReceive(SurrenderMessage msg )
+void App::localSurrenderMessageReceive(SurrenderMessage)
 {
-	game->remotePlayerRetired(msg.getName(), msg.getColor());
+	game->playerRetired();
 }
 
 void App::startGame() {
@@ -284,6 +291,9 @@ void App::disconnectFromServer() {
 }
 
 void OptDialog::connectBtnClicked() {
+	socket.close();
+	state = 0;
+	pbSearch->setText("Start search");
 	switch (comboBox->currentIndex()) {
 		case 0: app->localClient.info.color = Qt::red; break;
 		case 1: app->localClient.info.color = Qt::darkYellow; break;

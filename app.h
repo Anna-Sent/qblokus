@@ -19,6 +19,8 @@ public:
 private:
 	App *app;
 	UDPSocket socket;
+	//QMap<
+	int state;
 public slots:
     void connectBtnClicked();
     void searchBtnClicked();
