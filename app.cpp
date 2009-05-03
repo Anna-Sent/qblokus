@@ -98,7 +98,7 @@ void OptDialog::searchBtnClicked() {
 		socket.bind(INADDR_ANY, 0);
 		int query = 110807;
 		for (int i=0;i<3;++i) {
-			socket.writeDatagram((char*)&query, sizeof(query), INADDR_BROADCAST, port);s
+			socket.writeDatagram((char*)&query, sizeof(query), INADDR_BROADCAST, port);
 		}
 	} else {
 		socket.close();
