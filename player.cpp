@@ -93,6 +93,11 @@ void Player::activateAll()
 
 void Player::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
+	if (active)
+	{
+		scene()->setBackgroundBrush(QBrush(color.light(180)));
+	} else
+		scene()->setBackgroundBrush(Qt::NoBrush);
 	if (surrendered)
 		painter->drawText(boundingRect(),Qt::AlignCenter,QString::fromUtf8("Игрок сдался"));
 	if (tilesleft==0)

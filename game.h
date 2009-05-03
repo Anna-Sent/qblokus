@@ -22,6 +22,8 @@ class Game:public QObject
 		void updatePlayers(QList<ClientInfo>,QList<bool>);
 		void clear();
 		bool isStarted() const;
+		void remotePlayerRetired(QString name,QColor color);
+	
 	public slots:
 		void start();
 		void turnDone(QColor color, QString tile,int id,int x,int y);
