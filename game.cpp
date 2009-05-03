@@ -131,7 +131,8 @@ void Game::playerRetired()
 			//winner(players[currplayer]);
 			int msp=0;
 			for(int p=1;p<players.size();++p)
-				if (players[p]->getScore()>players[msp]->getScore()) msp=p;
+				if ((players[p]->getScore()>players[msp]->getScore())||
+				   ((dynamic_cast<LocalPlayer*>(players[p]))&&(players[p]->getScore()==players[msp]->getScore()))) msp=p;
 			winner(players[msp]);
 		} else
 		{
@@ -142,6 +143,13 @@ void Game::playerRetired()
 	{//Недостижимо!
 		//this->deleteLater();
 		//emit gameOver();
+	}
+	QPushButton *surrender = widget->findChild<QPushButton*>(QString("btnSurrender"));
+	if (dynamic_cast<LocalPlayer*>(players[currplayer]))
+	{
+		surrender->setEnabled(true);
+	} else {
+		surrender->setEnabled(false);
 	}
 }
 
@@ -201,7 +209,10 @@ void Game::start()
 
 void Game::winner(Player* winner)
 {
-	std::cerr << winner->getName().toStdString() << "\n";
+	//std::cerr << winner->getName().toStdString() << "\n";
+	QMessageBox msgBox;
+	msgBox.setText(QString::fromUtf8("Победитель: ")+winner->getName());
+	msgBox.exec();
 	emit gameOver(winner->getName(),winner->getScore(),winner->getColor());
 }
 

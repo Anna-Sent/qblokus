@@ -112,9 +112,9 @@ void App::turnDone(QString name,QColor color,QString tile,int id,int x,int y) {
 	msg.send(localClient.socket);
 	//sendToAll(&msg);
 }
-void App::localSurrenderMessageReceive(SurrenderMessage)
+void App::localSurrenderMessageReceive(SurrenderMessage msg)
 {
-	game->playerRetired();
+	game->remotePlayerRetired(msg.getName(),msg.getColor());
 }
 
 void App::startGame() {
