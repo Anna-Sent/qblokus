@@ -1,6 +1,5 @@
 #include <QObject>
 #include <QString>
-#include <QtNetwork/QAbstractSocket>
 #include <QThread>
 #include <QMutex>
 #include <QQueue>

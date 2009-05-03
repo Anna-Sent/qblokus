@@ -11,6 +11,7 @@ OptDialog::OptDialog(App* app) {
 	connect(pbSearch, SIGNAL(clicked()), this, SLOT(searchBtnClicked()));
 	connect(pbConnect, SIGNAL(clicked()), this, SLOT(connectBtnClicked()));
 	connect(cbCreateServer, SIGNAL(toggled(bool)), this, SLOT(toggled(bool)));
+	connect(&socket, SIGNAL(readyRead()), this, SLOT(getServersList()));
 }
 
 App::App(QWidget *parent) {
@@ -45,8 +46,58 @@ App::App(QWidget *parent) {
 	connect(actionDisconnectFromServer, SIGNAL(activated()), this, SLOT(disconnectFromServer()));
 	connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(sendMessage()));
 	connect(lineEdit, SIGNAL(returnPressed()), lineEdit, SLOT(clear()));
+	
+	connect(&listener, SIGNAL(readyRead()), this, SLOT(readyReadUDP()));
 	dialog = new OptDialog(this);
 	dialog->show();
+}
+
+void App::readyReadUDP() {
+	if (listener.hasPendingDatagrams()) {
+		qint64 datagramSize = listener.pendingDatagramSize();
+		if (datagramSize == sizeof(int)) {
+			int data;
+			QString address;
+			quint16 port;
+			listener.readDatagram((char*)&data, datagramSize, &address, &port);
+			cerr << port << " is port get by listener" << endl;
+			if (data == 110807) {
+				QList<ClientInfo> list;
+				for (int i=0;i<clients.size();++i)
+					list.append(clients[i]->info);
+				PlayersListMessage msg(list);
+				QByteArray data = msg.serialize();
+				int res = listener.writeDatagram(data.data(), data.size(), address, port);
+				cerr << "send " << res << "bytes to "<<
+				address.toUtf8().data()<<" on port "<<port<<endl;
+			}
+		}
+	}
+}
+
+void OptDialog::getServersList() {
+	cerr<<"get servers list\n";
+	if (socket.hasPendingDatagrams()) {
+		qint64 datagramSize = socket.pendingDatagramSize();
+		char *data = (char*)::malloc(datagramSize);
+		QString address;
+		quint16 port;
+		socket.readDatagram(data, datagramSize, &address, &port);
+		cerr << port << " is port got by client" << endl;
+		lwServersList->addItem(address); // if no
+		free(data);
+	}
+}
+
+void OptDialog::searchBtnClicked() {
+	quint16 port = sbPort->value();
+	socket.bind(INADDR_ANY, 0);
+	int query = 110807;
+	for (int i=0;i<4;++i) {
+		socket.writeDatagram((char*)&query, sizeof(query), INADDR_BROADCAST, port);
+		::sleep(1);
+	}
+	socket.close();
 }
 
 void App::turnDone(QString name,QColor color,QString tile,int id,int x,int y) {
@@ -141,6 +192,7 @@ App::~App() {
 	delete dialog;
 	serverConnection.close();
 	timer.stop();
+	listener.close();
 	for (int j=0;j<clients.size();delete clients[j++]) {}
 }
 
@@ -217,6 +269,7 @@ void App::disconnectFromServer() {
 	localtimer.stop();
 	if (serverConnection.isListening()) {
 		serverConnection.close();
+		listener.close();
 		timer.stop();
 		while (clients.size()>0) {
 			Client *client = clients[0];
@@ -230,10 +283,6 @@ void App::disconnectFromServer() {
 	dialog->show();
 }
 
-void OptDialog::searchBtnClicked() {
-	int port = sbPort->value();
-}
-
 void OptDialog::connectBtnClicked() {
 	switch (comboBox->currentIndex()) {
 		case 0: app->localClient.info.color = Qt::red; break;
@@ -245,6 +294,9 @@ void OptDialog::connectBtnClicked() {
 	app->localClient.info.name = leNickname->text();
 	if (app->localClient.info.name=="") {
 		QMessageBox::warning(this, "Error", "Enter nickname");
+		return;
+	} else if (app->localClient.info.name.toUtf8().size()>100) {
+		QMessageBox::warning(this, "Error", "Your nickname is too long");
 		return;
 	}
 	app->textEdit->clear();
@@ -271,6 +323,7 @@ void OptDialog::connectBtnClicked() {
 		int clientscount = sbClientsCount->value();
 		bool listening = app->serverConnection.listen(port);
 		app->timer.start();
+		app->listener.bind(INADDR_ANY, port);
 		if (listening) {
 			close();
 			app->game = new Game(app);
@@ -360,7 +413,11 @@ void App::error() {
 	perror("local error "+localClient.socket->errorString());
 	localClient.socket->close();
 	localtimer.stop();
-	if (serverConnection.isListening()) { serverConnection.close(); timer.stop(); }
+	if (serverConnection.isListening()) {
+		serverConnection.close();
+		timer.stop();
+		listener.close();
+	}
 }
 
 void App::remoteError() {
