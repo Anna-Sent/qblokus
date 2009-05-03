@@ -24,6 +24,8 @@ Game::Game(QWidget* widget):currplayer(0),running(false)
 	connect(table,SIGNAL(turnComplete(QColor,QString,int,int,int)),this,SLOT(turnDone(QColor,QString,int,int,int)));
 	QPushButton *surrender = widget->findChild<QPushButton*>(QString("btnSurrender"));
 	connect(surrender,SIGNAL(clicked()),this,SLOT(playerRetired()));
+	surrender->setEnabled(false);
+
 	this->widget=widget;
 	playersleft=0;
 }
@@ -79,10 +81,21 @@ void Game::turnDone(QColor color, QString tile,int id,int x,int y)
 	do {
 		currplayer=(currplayer+1)%players.size();
 	} while(players[currplayer]->getSurrendered());
+	QPushButton *surrender = widget->findChild<QPushButton*>(QString("btnSurrender"));
+	if (dynamic_cast<LocalPlayer*>(players[currplayer]))
+	{
+		surrender->setEnabled(true);
+	} else {
+		surrender->setEnabled(false);
+	}
 	players[currplayer]->startTurn();
 	std::cerr << "===== " << currplayer << " ====\n";
 }
-
+void Game::remotePlayerRetired(QString name,QColor color)
+{
+	if (name==players[currplayer]->getName()&&color==players[currplayer]->getColor())
+		playerRetired();
+}
 void Game::playerRetired()
 {
 	if (!running) return;
@@ -174,6 +187,13 @@ void Game::clear() {
 void Game::start()
 {
 	if (running) return;
+	QPushButton *surrender = widget->findChild<QPushButton*>(QString("btnSurrender"));
+	if (dynamic_cast<LocalPlayer*>(players[currplayer]))
+	{
+		surrender->setEnabled(true);
+	} else {
+		surrender->setEnabled(false);
+	}
 	if (players.size()>0)
 		players[0]->startTurn();
 	running=true;
