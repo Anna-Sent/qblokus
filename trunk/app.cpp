@@ -75,11 +75,11 @@ OptDialog::OptDialog(App* app) {
 	connect(&socket, SIGNAL(readyRead()), this, SLOT(getServersList()));
 	timer.setInterval(1000);
 	connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
-	connect(lwServersList, SIGNAL(itemClicked(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
-	connect(lwServersList, SIGNAL(itemChanged(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
-	connect(lwServersList, SIGNAL(itemDoubleClicked(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
-	connect(lwServersList, SIGNAL(itemEntered(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
-	connect(lwServersList, SIGNAL(itemPressed(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
+	connect(lwServersList, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClicked(QListWidgetItem*)));
+	connect(lwServersList, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(itemChanged(QListWidgetItem*)));
+	connect(lwServersList, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(itemDoubleClicked(QListWidgetItem*)));
+	connect(lwServersList, SIGNAL(itemEntered(QListWidgetItem*)), this, SLOT(itemEntered(QListWidgetItem*)));
+	connect(lwServersList, SIGNAL(itemPressed(QListWidgetItem*)), this, SLOT(itemPressed(QListWidgetItem*)));
 }
 
 void OptDialog::toggled(bool checked) {
@@ -153,8 +153,31 @@ void OptDialog::connectBtnClicked() {
 }
 
 void OptDialog::itemClicked ( QListWidgetItem * item ) {
-	QMessageBox::information(this,item->text(),"bla");
-	tableWidget->clear();
+	textEdit->clear();
+	if (servers.contains(item->text())) {
+		QList<ClientInfo> list = servers.value(item->text());
+		for (int i=0;i<list.size();++i) {
+			textEdit->setTextColor(list[i].color);
+			textEdit->append(list[i].name);
+		}
+	}
+}
+
+	void OptDialog::itemChanged(QListWidgetItem*item) {
+	QMessageBox::information(this,item->text(),"ch");
+//	tableWidget->clear();
+}
+	void OptDialog::itemDoubleClicked(QListWidgetItem*item) {
+	QMessageBox::information(this,item->text(),"dc");
+	//tableWidget->clear();
+}
+	void OptDialog::itemEntered(QListWidgetItem*item) {
+	QMessageBox::information(this,item->text(),"ent");
+	//tableWidget->clear();
+}
+	void OptDialog::itemPressed(QListWidgetItem*item) {
+//	QMessageBox::information(this,item->text(),"pr");
+	//tableWidget->clear();
 }
 
 void OptDialog::getServersList() {
@@ -167,7 +190,11 @@ void OptDialog::getServersList() {
 		int res=socket.readDatagram(data, datagramSize, &address, &port);
 		cerr<<"read datagram "<<res<<" size"<<endl;
 		if (!servers.contains(address)) {
-			PlayersListMessage msg(data);
+			MessageHeader header;
+			header.len = datagramSize-header.getLength();
+			header.type = mtPlayersList;
+			PlayersListMessage msg(header);
+			msg.fill(QByteArray::fromRawData(data+header.getLength(), header.len));
 			servers.insert(address, msg.getList());
 			lwServersList->addItem(address);
 		}
