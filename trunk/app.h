@@ -55,6 +55,7 @@ private:
 	QList<Client*> clients;
 	QTimer timer;
 	QTimer localtimer;
+	int maxClientsCount;
 	friend class OptDialog;
 	void sendPlayersList();
 	void perror(QString);

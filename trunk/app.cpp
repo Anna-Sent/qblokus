@@ -128,7 +128,7 @@ void OptDialog::connectBtnClicked() {
 	} else { // create server and connect to it
 		QString hostname = "localhost";
 		int port = sbPort->value();
-		int clientscount = sbClientsCount->value();
+		app->maxClientsCount = sbClientsCount->value();
 		bool listening = app->serverConnection.listen(port);
 		app->timer.start();
 		app->listener.bind(INADDR_ANY, port);
@@ -216,12 +216,12 @@ void App::localSurrenderMessageReceive(SurrenderMessage msg)
 
 void App::startGame() {
 	if (serverConnection.isListening()) {
-		if (clients.size()>=2) {
+		if (clients.size()==maxClientsCount) {
 			game->start();
 			StartGameMessage msg;
 			sendToAll(&msg);
 		} else
-			QMessageBox::warning(this, "Warning", "Wait for 3 or 4 players");
+			QMessageBox::warning(this, "Warning", "Wait for "+QString::number(maxClientsCount)+" players");
 	} else
 		QMessageBox::warning(this, "Warning", "Only server can start the game");
 }
@@ -491,7 +491,7 @@ void App::remoteTryToConnectMessageReceive(TryToConnectMessage msg) {
 				error=2;
 			if (game->isStarted())
 				error=3;
-			if (clients.size()>4)
+			if (clients.size()>maxClientsCount)
 				error=4;
 			ConnectionAcceptedMessage msg1(error);
 			msg1.send(clients[j]->socket);
