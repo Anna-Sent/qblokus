@@ -2,18 +2,9 @@
 #include "app.h"
 #include <iostream>
 #include <cstdlib>
-
+#define MAGIC_NUMBER 110807
+	
 using namespace std;
-
-OptDialog::OptDialog(App* app) {
-	setupUi(this);
-	this->app = app;
-	connect(pbSearch, SIGNAL(clicked()), this, SLOT(searchBtnClicked()));
-	connect(pbConnect, SIGNAL(clicked()), this, SLOT(connectBtnClicked()));
-	connect(cbCreateServer, SIGNAL(toggled(bool)), this, SLOT(toggled(bool)));
-	connect(&socket, SIGNAL(readyRead()), this, SLOT(getServersList()));
-	state = 0;
-}
 
 App::App(QWidget *parent) {
 	setupUi(this);
@@ -61,7 +52,7 @@ void App::readyReadUDP() {
 			QString address;
 			quint16 port;
 			listener.readDatagram((char*)&data, datagramSize, &address, &port);
-			if (data == 110807) {
+			if (data == MAGIC_NUMBER) {
 				QList<ClientInfo> list;
 				for (int i=0;i<clients.size();++i)
 					list.append(clients[i]->info);
@@ -75,6 +66,92 @@ void App::readyReadUDP() {
 	}
 }
 
+OptDialog::OptDialog(App* app) {
+	setupUi(this);
+	this->app = app;
+	connect(pbSearch, SIGNAL(clicked()), this, SLOT(searchBtnClicked()));
+	connect(pbConnect, SIGNAL(clicked()), this, SLOT(connectBtnClicked()));
+	connect(cbCreateServer, SIGNAL(toggled(bool)), this, SLOT(toggled(bool)));
+	connect(&socket, SIGNAL(readyRead()), this, SLOT(getServersList()));
+	timer.setInterval(1000);
+	connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
+	connect(lwServersList, SIGNAL(itemClicked(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
+}
+
+void OptDialog::toggled(bool checked) {
+	if (checked)
+		pbConnect->setText("Create server and connect to it");
+	else
+		pbConnect->setText("Connect to server");
+}
+
+void OptDialog::connectBtnClicked() {
+	if (timer.isActive()) {
+		timer.stop();
+		socket.close();
+		pbSearch->setText("Start search");
+	}
+	switch (comboBox->currentIndex()) {
+		case 0: app->localClient.info.color = Qt::red; break;
+		case 1: app->localClient.info.color = Qt::darkYellow; break;
+		case 2: app->localClient.info.color = Qt::green; break;
+		case 3: app->localClient.info.color = Qt::blue; break;
+		default: QMessageBox::warning(this, "Error", "Incorrect color"); return;
+	}
+	app->localClient.info.name = leNickname->text();
+	if (app->localClient.info.name=="") {
+		QMessageBox::warning(this, "Error", "Enter nickname");
+		return;
+	} else if (app->localClient.info.name.toUtf8().size()>100) {
+		QMessageBox::warning(this, "Error", "Your nickname is too long");
+		return;
+	}
+	app->textEdit->clear();
+	app->listWidget->clear();
+	app->lineEdit->clear();
+	if (!cbCreateServer->checkState()) { // connect to some server
+		QString hostname = leServerIP->text();
+		if (hostname=="") {
+			QMessageBox::warning(this, "Error", "Enter host name");
+			return;
+		}
+		int port = sbPort->value();
+		close();
+		app->game = new Game(app);
+		//game signals
+		connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
+		connect(app->game, SIGNAL(playerRetired(QString, QColor)), app, SLOT(playerSurrendered(QString,QColor)));
+		app->show();
+		app->localClient.socket->connectToHost(hostname, port);
+		app->localtimer.start();
+	} else { // create server and connect to it
+		QString hostname = "localhost";
+		int port = sbPort->value();
+		int clientscount = sbClientsCount->value();
+		bool listening = app->serverConnection.listen(port);
+		app->timer.start();
+		app->listener.bind(INADDR_ANY, port);
+		if (listening) {
+			close();
+			app->game = new Game(app);
+			//game signals
+			connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
+			app->show();
+			app->localClient.socket->connectToHost(hostname, port);
+			app->localtimer.start();
+		} else {
+			QMessageBox::critical(this, "Error", app->serverConnection.errorString());
+			return;
+		}
+	}
+	//app->game = new Game(app);
+}
+
+void OptDialog::itemClicked ( QListWidgetItem * item ) {
+	QMessageBox::information(this,item->text(),"bla");
+	tableWidget->clear();
+}
+
 void OptDialog::getServersList() {
 	cerr<<"get servers list\n";
 	if (socket.hasPendingDatagrams()) {
@@ -82,29 +159,46 @@ void OptDialog::getServersList() {
 		char *data = (char*)::malloc(datagramSize);
 		QString address;
 		quint16 port;
-		socket.readDatagram(data, datagramSize, &address, &port);
-		cerr << port << " is port got by client" << endl;
-		lwServersList->addItem(address); // if no
+		int res=socket.readDatagram(data, datagramSize, &address, &port);
+		cerr<<"read datagram "<<res<<" size"<<endl;
+		/*if (!servers.contains(address)) {
+			cerr<<"1"<<endl;
+			PlayersListMessage msg(QByteArray::fromRawData(data, datagramSize));
+			cerr<<"2"<<endl;
+			servers.insert(address, msg.getList());
+			cerr<<"3"<<endl;
+			lwServersList->addItem(address);//i.key());// << ": " << i.value() << endl;
+			cerr<<"4"<<endl;
+		}*/
 		free(data);
 	}
 }
 
 void OptDialog::searchBtnClicked() {
-	if (state==0) {
-		lwServersList->clear();
-		quint16 port = sbPort->value();
-		pbSearch->setText("Stop search");
-		state = 1;
-		socket.bind(INADDR_ANY, 0);
-		int query = 110807;
-		for (int i=0;i<3;++i) {
-			socket.writeDatagram((char*)&query, sizeof(query), INADDR_BROADCAST, port);
-		}
-	} else {
+	if (timer.isActive()) {
+		timer.stop();
 		socket.close();
-		state = 0;
 		pbSearch->setText("Start search");
+	} else {
+		lwServersList->clear();
+		servers.clear();
+		socket.bind(INADDR_ANY, 0);
+		timer.start();
+		pbSearch->setText("Stop search");
 	}
+	// fill listW, event on click
+/*	QMap<QString, QList<ClientInfo> >::const_iterator i = servers.constBegin();
+	while (i != servers.constEnd()) {
+		lwServersList->addItem(i.key());// << ": " << i.value() << endl;
+		cerr<<"key "<<i.key().toUtf8().data()<<endl;
+		++i;
+	}*/
+}
+
+void OptDialog::timeout() {
+	int query = MAGIC_NUMBER;
+	quint16 port = sbPort->value();
+	socket.writeDatagram((char*)&query, sizeof(query), INADDR_BROADCAST, port);
 }
 
 void App::turnDone(QString name,QColor color,QString tile,int id,int x,int y) {
@@ -207,13 +301,6 @@ void App::exit() {
 	std::exit(0);
 }
 
-void OptDialog::toggled(bool checked) {
-	if (checked)
-		pbConnect->setText("Create server and connect to it");
-	else
-		pbConnect->setText("Connect to server");
-}
-
 void App::localChatMessageReceive(ChatMessage msg) {
 	textEdit->setTextColor(msg.getColor());
 	textEdit->append("("+QTime::currentTime().toString("hh:mm:ss")+") "+msg.getName()+":");
@@ -288,66 +375,6 @@ void App::disconnectFromServer() {
 	}
 	close();
 	dialog->show();
-}
-
-void OptDialog::connectBtnClicked() {
-	socket.close();
-	state = 0;
-	pbSearch->setText("Start search");
-	switch (comboBox->currentIndex()) {
-		case 0: app->localClient.info.color = Qt::red; break;
-		case 1: app->localClient.info.color = Qt::darkYellow; break;
-		case 2: app->localClient.info.color = Qt::green; break;
-		case 3: app->localClient.info.color = Qt::blue; break;
-		default: QMessageBox::warning(this, "Error", "Incorrect color"); return;
-	}
-	app->localClient.info.name = leNickname->text();
-	if (app->localClient.info.name=="") {
-		QMessageBox::warning(this, "Error", "Enter nickname");
-		return;
-	} else if (app->localClient.info.name.toUtf8().size()>100) {
-		QMessageBox::warning(this, "Error", "Your nickname is too long");
-		return;
-	}
-	app->textEdit->clear();
-	app->listWidget->clear();
-	app->lineEdit->clear();
-	if (!cbCreateServer->checkState()) { // connect to some server
-		QString hostname = leServerIP->text();
-		if (hostname=="") {
-			QMessageBox::warning(this, "Error", "Enter host name");
-			return;
-		}
-		int port = sbPort->value();
-		close();
-		app->game = new Game(app);
-		//game signals
-		connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
-		connect(app->game, SIGNAL(playerRetired(QString, QColor)), app, SLOT(playerSurrendered(QString,QColor)));
-		app->show();
-		app->localClient.socket->connectToHost(hostname, port);
-		app->localtimer.start();
-	} else { // create server and connect to it
-		QString hostname = "localhost";
-		int port = sbPort->value();
-		int clientscount = sbClientsCount->value();
-		bool listening = app->serverConnection.listen(port);
-		app->timer.start();
-		app->listener.bind(INADDR_ANY, port);
-		if (listening) {
-			close();
-			app->game = new Game(app);
-			//game signals
-			connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
-			app->show();
-			app->localClient.socket->connectToHost(hostname, port);
-			app->localtimer.start();
-		} else {
-			QMessageBox::critical(this, "Error", app->serverConnection.errorString());
-			return;
-		}
-	}
-	//app->game = new Game(app);
 }
 
 void App::playerSurrendered(QString name,QColor color)
