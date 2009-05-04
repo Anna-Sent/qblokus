@@ -211,7 +211,7 @@ void PlayersListMessage::fill(const QByteArray& buffer) {
 	int count = *((int*)data);
 	data+=sizeof(int);
 	for (int i=0; i<count; ++i) {
-		ClientInfo item;// = new ClientInfo;
+		ClientInfo item;
 		item.fill(data);
 		data += item.size();
 		list.append(item);
