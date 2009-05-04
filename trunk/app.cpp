@@ -90,6 +90,7 @@ void OptDialog::connectBtnClicked() {
 		timer.stop();
 		socket.close();
 		pbSearch->setText("Start search");
+		sbPort->setDisabled(false);
 	}
 	switch (comboBox->currentIndex()) {
 		case 0: app->localClient.info.color = Qt::red; break;
@@ -179,10 +180,12 @@ void OptDialog::searchBtnClicked() {
 		timer.stop();
 		socket.close();
 		pbSearch->setText("Start search");
+		sbPort->setDisabled(false);
 	} else {
 		lwServersList->clear();
 		servers.clear();
 		socket.bind(INADDR_ANY, 0);
+		sbPort->setDisabled(true);
 		timer.start();
 		pbSearch->setText("Stop search");
 	}
