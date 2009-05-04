@@ -56,10 +56,11 @@ void Game::addPlayer(QString name,QColor color, PlayerType type)
 	QGraphicsView *gv = widget->findChild<QGraphicsView*>(playerwidget+QString::number(i+1));
 	QLCDNumber *lcd = widget->findChild<QLCDNumber*>(playerscore+QString::number(i+1));
 	gv->setScene(playerscene);
-	
+	ui->gridLayout->invalidate();
 	gv->setMinimumSize(playerscene->sceneRect().size().toSize());
 	gv->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	gv->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		
 	
 	lcd->setPalette(QPalette(color));
 	//ui->horizontalLayout->invalidate();
@@ -236,6 +237,7 @@ bool operator==(const ClientInfo& a1,const ClientInfo& a2)
 
 void Game::retirePlayer(int i)
 {
+	if (players[i]->getSurrendered()) return;
 	std::cerr << i << " ======= " << currplayer << std::endl; 
 	if (currplayer==i) 
 	{
@@ -288,7 +290,8 @@ void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 				{
 					for(int i=pl;i<players.size();++i)
 					{
-						retirePlayer(i);
+						if (!players[i]->getSurrendered())
+							retirePlayer(i);
 					}
 					pl=players.size();
 				}
@@ -301,7 +304,8 @@ void Game::updatePlayers(QList<ClientInfo> clients,QList<bool> local)
 				}
 				else
 				{
-					retirePlayer(pl);
+					if (!players[pl]->getSurrendered())
+						retirePlayer(pl);
 					++pl;			
 				}
 			}
