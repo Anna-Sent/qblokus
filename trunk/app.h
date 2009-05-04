@@ -19,13 +19,15 @@ public:
 private:
 	App *app;
 	UDPSocket socket;
-	//QMap<
-	int state;
+	QMap<QString, QList<ClientInfo> > servers;
+	QTimer timer;
 public slots:
     void connectBtnClicked();
     void searchBtnClicked();
 	void toggled(bool);
 	void getServersList();
+	void timeout();
+	void itemClicked ( QListWidgetItem * item );
 };
 
 class Client : public QObject {
