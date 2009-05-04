@@ -76,6 +76,10 @@ OptDialog::OptDialog(App* app) {
 	timer.setInterval(1000);
 	connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
 	connect(lwServersList, SIGNAL(itemClicked(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
+	connect(lwServersList, SIGNAL(itemChanged(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
+	connect(lwServersList, SIGNAL(itemDoubleClicked(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
+	connect(lwServersList, SIGNAL(itemEntered(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
+	connect(lwServersList, SIGNAL(itemPressed(QListWidgetItem)), this, SLOT(itemClicked(QListWidgetItem)));
 }
 
 void OptDialog::toggled(bool checked) {
@@ -162,15 +166,11 @@ void OptDialog::getServersList() {
 		quint16 port;
 		int res=socket.readDatagram(data, datagramSize, &address, &port);
 		cerr<<"read datagram "<<res<<" size"<<endl;
-		/*if (!servers.contains(address)) {
-			cerr<<"1"<<endl;
-			PlayersListMessage msg(QByteArray::fromRawData(data, datagramSize));
-			cerr<<"2"<<endl;
+		if (!servers.contains(address)) {
+			PlayersListMessage msg(data);
 			servers.insert(address, msg.getList());
-			cerr<<"3"<<endl;
-			lwServersList->addItem(address);//i.key());// << ": " << i.value() << endl;
-			cerr<<"4"<<endl;
-		}*/
+			lwServersList->addItem(address);
+		}
 		free(data);
 	}
 }

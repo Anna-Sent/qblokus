@@ -62,7 +62,16 @@ class PlayersListMessage : public ComplexMessage {
 		QList<ClientInfo> list;
 	public:
 		PlayersListMessage(const MessageHeader& header);
-		PlayersListMessage(const QByteArray& data) {fill(data);}
+		PlayersListMessage(const char *data) {
+			int count = *((int*)data);
+			data+=sizeof(int);
+			for (int i=0; i<count; ++i) {
+				ClientInfo item;
+				item.fill(data);
+				data += item.size();
+				list.append(item);
+			}
+		}
 		QList<ClientInfo> getList() const {return list;}
 		PlayersListMessage(QList<ClientInfo>);
 		QByteArray serialize() const;
