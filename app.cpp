@@ -220,7 +220,7 @@ void App::startGame() {
 	if (serverConnection.isListening()) {
 		int count = 0;
 		for (int i=0;i<clients.size();++i)
-			if (clients[i]->state==2)
+			if (clients[i]->state==2 && clients[i]->socket->isConnected())
 				++count;
 		if (count==maxClientsCount) {
 			game->start();
