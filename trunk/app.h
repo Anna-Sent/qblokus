@@ -34,7 +34,7 @@ class Client : public QObject {
 	Q_OBJECT
 public:
 	int state; // for remote client
-	QTime lastpingtime; // for remote client
+	QTime lastpingtime; // for remote and local client
 	TCPSocket* socket;
 	MessageReceiver* receiver;
 	ClientInfo info;
