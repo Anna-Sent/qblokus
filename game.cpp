@@ -28,6 +28,7 @@ Game::Game(QWidget* widget):currplayer(0),running(false)
 
 	this->widget=widget;
 	playersleft=0;
+	clear();
 }
 
 void Game::addPlayer(QString name,QColor color, PlayerType type)
@@ -190,6 +191,7 @@ void Game::clear() {
 	for(int i=0;i<lcds.size();++i)
 	{
 		lcds[i]->setPalette(QPalette());
+		lcds[i]->display(0);
 	}
 //	delete table;
 }
