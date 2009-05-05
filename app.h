@@ -28,10 +28,6 @@ public slots:
 	void getServersList();
 	void timeout();
 	void itemClicked ( QListWidgetItem * item );
-	void itemChanged(QListWidgetItem*);
-	void itemDoubleClicked(QListWidgetItem*);
-	void itemEntered(QListWidgetItem*);
-	void itemPressed(QListWidgetItem*);
 };
 
 class Client : public QObject {

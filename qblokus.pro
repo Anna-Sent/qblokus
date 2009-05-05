@@ -8,8 +8,6 @@ SOURCES = socket.cpp \
 	udpsocket.cpp
 
 HEADERS = socket.h \
-	ui_racingForm.h \
-	ui_optionsDialog.h \
 	app.h \
 	messagerecv.h \
 	clientinfo.h \
