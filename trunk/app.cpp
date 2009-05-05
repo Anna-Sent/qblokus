@@ -2,17 +2,18 @@
 #include "app.h"
 #include <iostream>
 #include <cstdlib>
-#define MAGIC_NUMBER 110807
+#define MAGIC_NUMBER	110807
+#define PING_INTERVAL	5000
+#define PING_TIME		15000					
 	
 using namespace std;
 
 App::App(QWidget *parent) {
 	setupUi(this);
-	timer.setInterval(5000);
-	localtimer.setInterval(5000);
+	timer.setInterval(PING_INTERVAL);
+	localtimer.setInterval(PING_INTERVAL);
 	connect(&timer, SIGNAL(timeout()), this, SLOT(ping()));
 	connect(&localtimer, SIGNAL(timeout()), this, SLOT(localTimerCheck()));
-	//qRegisterMetaType<QAbstractSocket::SocketError>("QAbstractSocket::SocketError");
 	TCPSocket *clientConnection = new TCPSocket;
 	MessageReceiver *local_receiver=new MessageReceiver(clientConnection);
 	connect(local_receiver, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(localChatMessageReceive(ChatMessage)));
@@ -55,7 +56,8 @@ void App::readyReadUDP() {
 			if (data == MAGIC_NUMBER) {
 				QList<ClientInfo> list;
 				for (int i=0;i<clients.size();++i)
-					list.append(clients[i]->info);
+					if (clients[i]->state==2&&clients[i]->socket->isConnected())
+						list.append(clients[i]->info);
 				PlayersListMessage msg(list);
 				QByteArray data = msg.serialize();
 				int res = listener.writeDatagram(data.data(), data.size(), address, port);
@@ -76,10 +78,6 @@ OptDialog::OptDialog(App* app) {
 	timer.setInterval(1000);
 	connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
 	connect(lwServersList, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(itemClicked(QListWidgetItem*)));
-	connect(lwServersList, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(itemChanged(QListWidgetItem*)));
-	connect(lwServersList, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(itemDoubleClicked(QListWidgetItem*)));
-	connect(lwServersList, SIGNAL(itemEntered(QListWidgetItem*)), this, SLOT(itemEntered(QListWidgetItem*)));
-	connect(lwServersList, SIGNAL(itemPressed(QListWidgetItem*)), this, SLOT(itemPressed(QListWidgetItem*)));
 }
 
 void OptDialog::toggled(bool checked) {
@@ -95,6 +93,8 @@ void OptDialog::connectBtnClicked() {
 		socket.close();
 		pbSearch->setText("Start search");
 		sbPort->setDisabled(false);
+		servers.clear();
+		textEdit->clear();
 	}
 	switch (comboBox->currentIndex()) {
 		case 0: app->localClient.info.color = Qt::red; break;
@@ -149,7 +149,6 @@ void OptDialog::connectBtnClicked() {
 			return;
 		}
 	}
-	//app->game = new Game(app);
 }
 
 void OptDialog::itemClicked ( QListWidgetItem * item ) {
@@ -161,23 +160,6 @@ void OptDialog::itemClicked ( QListWidgetItem * item ) {
 			textEdit->append(list[i].name);
 		}
 	}
-}
-
-	void OptDialog::itemChanged(QListWidgetItem*item) {
-	QMessageBox::information(this,item->text(),"ch");
-//	tableWidget->clear();
-}
-	void OptDialog::itemDoubleClicked(QListWidgetItem*item) {
-	QMessageBox::information(this,item->text(),"dc");
-	//tableWidget->clear();
-}
-	void OptDialog::itemEntered(QListWidgetItem*item) {
-	QMessageBox::information(this,item->text(),"ent");
-	//tableWidget->clear();
-}
-	void OptDialog::itemPressed(QListWidgetItem*item) {
-//	QMessageBox::information(this,item->text(),"pr");
-	//tableWidget->clear();
 }
 
 void OptDialog::getServersList() {
@@ -208,6 +190,7 @@ void OptDialog::searchBtnClicked() {
 		socket.close();
 		pbSearch->setText("Start search");
 		sbPort->setDisabled(false);
+		textEdit->clear();
 	} else {
 		lwServersList->clear();
 		servers.clear();
@@ -216,13 +199,6 @@ void OptDialog::searchBtnClicked() {
 		timer.start();
 		pbSearch->setText("Stop search");
 	}
-	// fill listW, event on click
-/*	QMap<QString, QList<ClientInfo> >::const_iterator i = servers.constBegin();
-	while (i != servers.constEnd()) {
-		lwServersList->addItem(i.key());// << ": " << i.value() << endl;
-		cerr<<"key "<<i.key().toUtf8().data()<<endl;
-		++i;
-	}*/
 }
 
 void OptDialog::timeout() {
@@ -234,7 +210,6 @@ void OptDialog::timeout() {
 void App::turnDone(QString name,QColor color,QString tile,int id,int x,int y) {
 	TurnMessage msg(name,color,tile,id,x,y);
 	msg.send(localClient.socket);
-	//sendToAll(&msg);
 }
 void App::localSurrenderMessageReceive(SurrenderMessage msg)
 {
@@ -243,7 +218,11 @@ void App::localSurrenderMessageReceive(SurrenderMessage msg)
 
 void App::startGame() {
 	if (serverConnection.isListening()) {
-		if (clients.size()==maxClientsCount) {
+		int count = 0;
+		for (int i=0;i<clients.size();++i)
+			if (clients[i]->state==2)
+				++count;
+		if (count==maxClientsCount) {
 			game->start();
 			StartGameMessage msg;
 			sendToAll(&msg);
@@ -287,14 +266,14 @@ void App::ping() {
 			msg.send(clients[i]->socket);
 			QTime last = clients[i]->lastpingtime;
 			int elapsed = last.elapsed();
-			if (elapsed > 15000) {
+			if (elapsed > PING_TIME) {
 				perror(QString::fromUtf8("Удаленный клиент отвалился"));
 				clients[i]->socket->close();// client shut down
 			}
 		}
 	}
 }
-
+//===========================Timer ping=========================================
 void App::localPingMessageReceive(PingMessage msg) {
 	msg.send(localClient.socket);
 	localClient.lastpingtime.start();
@@ -302,7 +281,7 @@ void App::localPingMessageReceive(PingMessage msg) {
 
 void App::localTimerCheck() {
 	int elapsed = localClient.lastpingtime.elapsed();
-	if (elapsed > 15000) {
+	if (elapsed > PING_TIME) {
 		perror(QString::fromUtf8("Проверьте кабель"));
 		localClient.socket->close();
 	}
@@ -318,7 +297,7 @@ void App::remotePingMessageReceive(PingMessage) {
 		}
 	}
 }
-
+//===========================Timer ping=========================================
 App::~App() {
 	delete dialog;
 	serverConnection.close();
@@ -426,7 +405,8 @@ void App::localServerReadyMessageReceive(ServerReadyMessage) {
 void App::sendPlayersList() {
 	QList<ClientInfo> list;
 	for (int i=0;i<clients.size();++i)
-		list.append(clients[i]->info);
+		if (clients[i]->state==2&&clients[i]->socket->isConnected())
+			list.append(clients[i]->info);
 	PlayersListMessage msg(list);
 	sendToAll(&msg);
 }
@@ -462,9 +442,9 @@ void App::remoteDisconnected() {
 		if (i != clients.size()) {
 			Client *client = clients[i];
 			ClientDisconnectMessage msg(client->info.name, client->info.color);
-			sendToAll(&msg);
 			clients.removeAt(i);
 			client->deleteLater();
+			sendToAll(&msg);
 			sendPlayersList();
 		} else s->deleteLater();
 	}
@@ -491,8 +471,9 @@ void App::remoteError() {
 	TCPSocket *s = dynamic_cast<TCPSocket*>(sender());
 	if (s) {
 		int i;
+		int count = clients.size();
 		for (i=0; i<clients.size()&&s!=clients[i]->socket; ++i) {}
-		if (i != clients.size()) {
+		if (i != count) {
 			perror("remote error "+s->errorString());
 			s->close();
 			//ClientDisconnectMessage msg(clients[i]->info.name, clients[i]->info.color);
