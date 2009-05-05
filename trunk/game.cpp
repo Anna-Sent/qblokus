@@ -67,6 +67,7 @@ void Game::addPlayer(QString name,QColor color, PlayerType type)
 	//ui->gridLayout->invalidate();
 	connect(player,SIGNAL(scoreChanged(int)),lcd,SLOT(display(int)));
 	connect(player,SIGNAL(iWin(Player* )),this,SLOT(winner(Player *)));
+	lcd->display(0);
 	++playersleft;
 }
 
