@@ -11,7 +11,8 @@ HEADERS = socket.h \
 	app.h \
 	messagerecv.h \
 	clientinfo.h \
-	udpsocket.h
+	udpsocket.h \
+	client.h
 
 SOURCES += coloritem.cpp \
 	tile.cpp \

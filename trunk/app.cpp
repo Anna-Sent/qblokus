@@ -2,7 +2,6 @@
 #include "app.h"
 #include <iostream>
 #include <cstdlib>
-//#include "client.h"
 #define MAGIC_NUMBER	110807
 #define PING_INTERVAL	5000
 #define PING_TIME		15000					

@@ -1,3 +1,5 @@
+#ifndef UDPSOCKET_H_
+#define UDPSOCKET_H_
 #include <arpa/inet.h>
 #include <QObject>
 #include <QString>
@@ -35,3 +37,5 @@ class UDPSocket: public QThread {
 	signals:
 		void readyRead();
 };
+#endif
+

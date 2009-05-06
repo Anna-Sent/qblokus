@@ -1,9 +1,10 @@
-//#include "socket.h"
-//#include "udpsocket.h"
-//#include "messagerecv.h"
+#include "socket.h"
+#include "udpsocket.h"
+#include "messagerecv.h"
 //#include <iostream>
 //#include <QTimer>
-//#include <QTime>
+#include <QTime>
+#include <QObject>
 //using namespace std;
 
 class LocalClient : public QObject {
@@ -30,3 +31,4 @@ public:
 	~RemoteClient() { delete receiver; socket->deleteLater(); }
 	RemoteClient():state(0),lastpingtime(QTime::currentTime()),socket(NULL),receiver(NULL) {}
 };
+
