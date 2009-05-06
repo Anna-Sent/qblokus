@@ -61,8 +61,6 @@ void App::readyReadUDP() {
 				PlayersListMessage msg(list);
 				QByteArray data = msg.serialize();
 				int res = listener.writeDatagram(data.data(), data.size(), address, port);
-				cerr << "send " << res << " bytes to "<<
-				address.toUtf8().data()<<" on port "<<port<<endl;
 			}
 		}
 	}
@@ -163,14 +161,12 @@ void OptDialog::itemClicked ( QListWidgetItem * item ) {
 }
 
 void OptDialog::getServersList() {
-	cerr<<"get servers list\n";
 	if (socket.hasPendingDatagrams()) {
 		qint64 datagramSize = socket.pendingDatagramSize();
 		char *data = (char*)::malloc(datagramSize);
 		QString address;
 		quint16 port;
 		int res=socket.readDatagram(data, datagramSize, &address, &port);
-		cerr<<"read datagram "<<res<<" size"<<endl;
 		if (!servers.contains(address)) {
 			MessageHeader header;
 			header.len = datagramSize-header.getLength();
@@ -342,11 +338,10 @@ void App::sendMessage() {
 }
 
 void App::sendToAll(Message *msg) {
-	QList<Client*>::iterator i;
+	QList<RemoteClient*>::iterator i;
 	for (i = clients.begin(); i != clients.end(); ++i)
 		if ((*i)->socket->isConnected()&&(*i)->state==2) {
-			cerr << "send " << (*i)->info.name.toStdString() <<endl;
-			msg->send((*i)->socket);//->write(data.data(), data.size());
+			msg->send((*i)->socket);
 		}
 }
 
@@ -398,7 +393,6 @@ void App::sendPlayersList() {
 }
 
 void App::newConnection() {
-	//pinfo("Connected yet another client");
 	if (serverConnection.hasPendingConnections()) {
 		TCPSocket* s = serverConnection.nextPendingConnection();
 		MessageReceiver *rr = new MessageReceiver(s);
@@ -410,7 +404,7 @@ void App::newConnection() {
 		connect(s, SIGNAL(disconnected()), this, SLOT(remoteDisconnected()));
 		connect(s, SIGNAL(error()), this, SLOT(remoteError()));
 
-		Client *client = new Client;
+		RemoteClient *client = new RemoteClient;
 		client->socket = s;
 		client->receiver = rr;
 		client->state = 1;
@@ -426,10 +420,8 @@ void App::remoteDisconnected() {
 		int i;
 		for (i = 0; i < clients.size() && s != clients[i]->socket; ++i) {}
 		if (i != clients.size()) {
-			Client *client = clients[i];
-			ClientDisconnectMessage msg(client->info.name, client->info.color);
-			clients.removeAt(i);
-			client->deleteLater();
+			ClientDisconnectMessage msg(clients[i]->info.name, clients[i]->info.color);
+			removeClient(i);
 			sendToAll(&msg);
 			sendPlayersList();
 		} else s->deleteLater();
@@ -458,8 +450,6 @@ void App::remoteError() {
 		if (i != count) {
 			perror("remote error "+s->errorString());
 			s->close();
-			//ClientDisconnectMessage msg(clients[i]->info.name, clients[i]->info.color);
-			//sendToAll(&msg);
 		}
 	}
 }
@@ -470,8 +460,6 @@ void App::remoteTryToConnectMessageReceive(TryToConnectMessage msg) {
 		int j;
 		for (j = 0; j< clients.size() && r!=clients[j]->receiver; ++j) {}
 		if (j != clients.size()) {
-			//textEdit->setTextColor(msg.getColor());
-			//pinfo(msg.getName()+" connected remote");
 			int i, error=0;
 			for (i=0; i<clients.size()&&msg.getColor()!=clients[i]->info.color; ++i) {}
 			if (i!=clients.size())
@@ -491,12 +479,9 @@ void App::remoteTryToConnectMessageReceive(TryToConnectMessage msg) {
 				clients[j]->state = 2;
 				ClientConnectMessage msg1(msg.getName(), msg.getColor());
 				sendToAll(&msg1);
-				cerr << "send client connect message"<<endl;
 				sendPlayersList();
 			} else {
-				Client *client = clients[j];
-				clients.removeAt(j);
-				client->socket->close(); client->deleteLater();
+				removeClient(i);
 			}
 		}
 	}
@@ -518,11 +503,14 @@ void App::stopServer() {
 		listener.close();
 		timer.stop();
 		while (clients.size()>0) {
-			Client *client = clients[0];
-			clients.removeAt(0);
-			client->socket->close();
-			client->deleteLater();
+			removeClient(0);
 		}
 		clients.clear();
 	}
+}
+
+void App::removeClient(int i) {
+	RemoteClient *client = clients[i];
+	clients.removeAt(i);
+	client->deleteLater();
 }

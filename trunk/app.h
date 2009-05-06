@@ -30,7 +30,19 @@ public slots:
 	void itemClicked ( QListWidgetItem * item );
 };
 
-class Client : public QObject {
+class LocalClient : public QObject {
+	Q_OBJECT
+public:
+	QTime lastpingtime; // for remote and local client
+	TCPSocket* socket;
+	MessageReceiver* receiver;
+	ClientInfo info;
+public:
+	~LocalClient() { delete receiver; socket->deleteLater(); }
+	LocalClient():lastpingtime(QTime::currentTime()),socket(NULL),receiver(NULL) {}
+};
+
+class RemoteClient : public QObject {
 	Q_OBJECT
 public:
 	int state; // for remote client
@@ -38,8 +50,9 @@ public:
 	TCPSocket* socket;
 	MessageReceiver* receiver;
 	ClientInfo info;
-	~Client() { delete receiver; socket->deleteLater(); }
-	Client():state(0),lastpingtime(QTime::currentTime()),socket(NULL),receiver(NULL) {}
+public:
+	~RemoteClient() { delete receiver; socket->deleteLater(); }
+	RemoteClient():state(0),lastpingtime(QTime::currentTime()),socket(NULL),receiver(NULL) {}
 };
 
 class App : public QMainWindow, public Ui::MainWindow {
@@ -49,10 +62,10 @@ public:
     ~App();
 private:
 	OptDialog *dialog;
-	Client localClient;
+	LocalClient localClient;
 	TCPServer serverConnection;
 	UDPSocket listener;
-	QList<Client*> clients;
+	QList<RemoteClient*> clients;
 	QTimer timer;
 	QTimer localtimer;
 	int maxClientsCount;
@@ -62,6 +75,7 @@ private:
 	void pinfo(QString);
 	void sendToAll(Message*);
 	void stopServer();
+	void removeClient(int);
 public:
 	Game *game;
 public slots:
@@ -72,7 +86,7 @@ public slots:
 	void remotePingMessageReceive(PingMessage);
 	void localTimerCheck();
 	void sendMessage();
-	void remoteChatMessageReceive(ChatMessage);//getMessageFromOtherClient(QByteArray);
+	void remoteChatMessageReceive(ChatMessage);
 	void connected();
 	void disconnected();
 	void remoteDisconnected();
@@ -97,6 +111,5 @@ public slots:
 
 	void turnDone(QString,QColor,QString,int,int,int);
 	void playerSurrendered(QString,QColor);
-	//void remoteStartGameMessageReceive(StartGameMessage);
 };
 #endif
