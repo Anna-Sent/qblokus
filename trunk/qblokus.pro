@@ -6,14 +6,16 @@ SOURCES = socket.cpp \
 	messagerecv.cpp \
 	clientinfo.cpp \
 	udpsocket.cpp \
-	client.cpp
+	client.cpp \
+	server.cpp
 
 HEADERS = socket.h \
 	app.h \
 	messagerecv.h \
 	clientinfo.h \
 	udpsocket.h \
-	client.h
+	client.h \
+	server.h
 
 SOURCES += coloritem.cpp \
 	tile.cpp \

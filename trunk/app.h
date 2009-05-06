@@ -10,6 +10,7 @@
 #include <QTimer>
 #include <QTime>
 #include "client.h"
+#include "server.h"
 
 class App;
 
@@ -38,24 +39,15 @@ public:
     ~App();
 private:
 	OptDialog *dialog;
+	Server server;
 	LocalClient localClient;
-	TCPServer serverConnection;
-	UDPSocket listener;
-	QList<RemoteClient*> clients;
-	QTimer timer;
 	QTimer localtimer;
-	int maxClientsCount;
 	friend class OptDialog;
-	void sendPlayersList();
 	void perror(QString);
 	void pinfo(QString);
-	void sendToAll(Message*);
-	void stopServer();
-	void removeClient(RemoteClient*);
 public:
 	Game *game;
 public slots:
-	void readyReadUDP();
 	void startGame();
 	void ping();
 	void localPingMessageReceive(PingMessage);
@@ -66,7 +58,6 @@ public slots:
 	void error();
 	void exit();
 	void disconnectFromServer();
-	void newConnection();
 	void localChatMessageReceive(ChatMessage);
 	void localPlayersListMessageReceive(PlayersListMessage);
 	void localServerReadyMessageReceive(ServerReadyMessage);
@@ -79,13 +70,5 @@ public slots:
 	void localSurrenderMessageReceive(SurrenderMessage);
 	void turnDone(QString,QColor,QString,int,int,int);
 	void playerSurrendered(QString,QColor);
-	//from remote client
-	void remoteChatMessageReceive(ChatMessage,RemoteClient*);
-	void remoteTryToConnectMessageReceive(TryToConnectMessage,RemoteClient*);
-	void remotePingMessageReceive(PingMessage,RemoteClient*);
-	void remoteTurnMessageReceive(TurnMessage,RemoteClient*);
-	void remoteSurrenderMessageReceive(SurrenderMessage,RemoteClient*);
-	void remoteDisconnected(RemoteClient*);
-	void remoteError(RemoteClient*);
 };
 #endif
