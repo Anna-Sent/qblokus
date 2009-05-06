@@ -134,9 +134,9 @@ void OptDialog::connectBtnClicked() {
 		int port = sbPort->value();
 		app->maxClientsCount = sbClientsCount->value();
 		bool listening = app->serverConnection.listen(port);
-		app->timer.start();
-		app->listener.bind(INADDR_ANY, port);
 		if (listening) {
+			app->timer.start();
+			app->listener.bind(INADDR_ANY, port);
 			close();
 			app->game = new Game(app);
 			//game signals
@@ -464,6 +464,13 @@ void App::error() {
 		serverConnection.close();
 		timer.stop();
 		listener.close();
+		while (clients.size()>0) {
+			Client *client = clients[0];
+			clients.removeAt(0);
+			client->socket->close();
+			client->deleteLater();
+		}
+		clients.clear();
 	}
 }
 
