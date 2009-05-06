@@ -1,3 +1,5 @@
+#ifndef _CLIENT_H_
+#define _CLIENT_H_
 #include "socket.h"
 #include "udpsocket.h"
 #include "messagerecv.h"
@@ -47,4 +49,4 @@ signals:
 	void rcDisconnected(RemoteClient*);
 	void rcError(RemoteClient*);
 };
-
+#endif
