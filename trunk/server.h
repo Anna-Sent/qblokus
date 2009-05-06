@@ -48,7 +48,5 @@ private slots:
 	void remoteSurrenderMessageReceive(SurrenderMessage,RemoteClient*);
 	void remoteDisconnected(RemoteClient*);
 	void remoteError(RemoteClient*);
-signals:
-	void error(QString);
 };
 #endif
