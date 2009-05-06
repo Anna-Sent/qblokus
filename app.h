@@ -53,7 +53,7 @@ public slots:
 	void a_exit();
 	void a_disconnectFromServer();
 	// from local client
-	void localError();
+	void localError(QString);
 	void localConnected();
 	void localDisconnected();
 	//void localPingMessageReceive(PingMessage);

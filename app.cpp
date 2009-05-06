@@ -155,7 +155,7 @@ App::App(QWidget *parent) {
 	connect(&localClient, SIGNAL(lcSurrenderMessageReceive(SurrenderMessage)), this, SLOT(localSurrenderMessageReceive(SurrenderMessage)));
 	connect(&localClient, SIGNAL(lcConnected()), this, SLOT(localConnected()));
 	connect(&localClient, SIGNAL(lcDisconnected()), this, SLOT(localDisconnected()));
-	connect(&localClient, SIGNAL(lcError()), this, SLOT(localError()));
+	connect(&localClient, SIGNAL(lcError(QString)), this, SLOT(localError(QString)));
 
 	connect(actionExit, SIGNAL(activated()), this, SLOT(a_exit()));
 	connect(actionStartGame, SIGNAL(activated()), this, SLOT(a_startGame()));
@@ -272,7 +272,8 @@ void App::localDisconnected() {
 	delete game;
 }
 
-void App::localError() {
+void App::localError(QString msg) {
+	perror("local error "+msg);
 	localClient.quit();
 	server.quit();
 }
