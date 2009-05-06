@@ -41,25 +41,25 @@ private:
 	OptDialog *dialog;
 	Server server;
 	LocalClient localClient;
-	QTimer localtimer;
 	friend class OptDialog;
 	void perror(QString);
 	void pinfo(QString);
 public:
 	Game *game;
 public slots:
+	// from graphics
 	void a_startGame();
-	void localPingMessageReceive(PingMessage);
-	void localTimerCheck();
 	void le_sendMessage();
-	void connected();
-	void disconnected();
-	void error();
 	void a_exit();
 	void a_disconnectFromServer();
+	// from local client
+	void localError();
+	void localConnected();
+	void localDisconnected();
+	//void localPingMessageReceive(PingMessage);
 	void localChatMessageReceive(ChatMessage);
 	void localPlayersListMessageReceive(PlayersListMessage);
-	void localServerReadyMessageReceive(ServerReadyMessage);
+	//void localServerReadyMessageReceive(ServerReadyMessage);
 	void localClientConnectMessageReceive(ClientConnectMessage);
 	void localClientDisconnectMessageReceive(ClientDisconnectMessage);
 	void localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage);
@@ -67,9 +67,15 @@ public slots:
 	void localTurnMessageReceive(TurnMessage);
 	void localStartGameMessageReceive(StartGameMessage);
 	void localSurrenderMessageReceive(SurrenderMessage);
-	void turnDone(QString,QColor,QString,int,int,int);
-	void playerSurrendered(QString,QColor);
+	// from game
+	//void turnDone(QString,QColor,QString,int,int,int);
+	//void playerSurrendered(QString,QColor);
 signals:
+	// to server
 	void startGame();
+	// to client
+	void sendMessage(QString);
+	void tolcTurnDone(QString name,QColor color,QString tile,int id,int x,int y);
+	void tolcPlayerSurrendered(QString name,QColor color);
 };
 #endif

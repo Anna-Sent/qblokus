@@ -3,45 +3,8 @@
 #include <iostream>
 #include <cstdlib>
 #define MAGIC_NUMBER	110807
-#define PING_INTERVAL	5000
-#define PING_TIME		15000					
-	
 using namespace std;
-
-App::App(QWidget *parent) {
-	setupUi(this);
-	localtimer.setInterval(PING_INTERVAL);
-	connect(&localtimer, SIGNAL(timeout()), this, SLOT(localTimerCheck()));
-	TCPSocket *clientConnection = new TCPSocket;
-	MessageReceiver *local_receiver=new MessageReceiver(clientConnection);
-	connect(local_receiver, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(localChatMessageReceive(ChatMessage)));
-	connect(local_receiver, SIGNAL(playersListMessageReceive(PlayersListMessage)), this, SLOT(localPlayersListMessageReceive(PlayersListMessage)));
-	connect(local_receiver, SIGNAL(serverReadyMessageReceive(ServerReadyMessage)), this, SLOT(localServerReadyMessageReceive(ServerReadyMessage)));
-	connect(local_receiver, SIGNAL(clientConnectMessageReceive(ClientConnectMessage)), this, SLOT(localClientConnectMessageReceive(ClientConnectMessage)));
-	connect(local_receiver, SIGNAL(clientDisconnectMessageReceive(ClientDisconnectMessage)), this, SLOT(localClientDisconnectMessageReceive(ClientDisconnectMessage)));
-	connect(local_receiver, SIGNAL(connectionAcceptedMessageReceive(ConnectionAcceptedMessage)), this, SLOT(localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)));
-	connect(local_receiver, SIGNAL(pingMessageReceive(PingMessage)), this, SLOT(localPingMessageReceive(PingMessage)));
-
-	connect(local_receiver, SIGNAL(startGameMessageReceive(StartGameMessage)), this, SLOT(localStartGameMessageReceive(StartGameMessage)));
-	connect(local_receiver, SIGNAL(turnMessageReceive(TurnMessage)), this, SLOT(localTurnMessageReceive(TurnMessage)));
-	connect(local_receiver, SIGNAL(surrenderMessageReceive(SurrenderMessage)), this, SLOT(localSurrenderMessageReceive(SurrenderMessage)));
-
-	connect(clientConnection, SIGNAL(connected()), this, SLOT(connected()));
-	connect(clientConnection, SIGNAL(disconnected()), this, SLOT(disconnected()));
-	connect(clientConnection, SIGNAL(error()), this, SLOT(error()));
-	localClient.socket = clientConnection;
-	localClient.receiver = local_receiver;
-	connect(actionExit, SIGNAL(activated()), this, SLOT(a_exit()));
-	connect(actionStartGame, SIGNAL(activated()), this, SLOT(a_startGame()));
-	connect(actionDisconnectFromServer, SIGNAL(activated()), this, SLOT(a_disconnectFromServer()));
-	connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(le_sendMessage()));
-	connect(lineEdit, SIGNAL(returnPressed()), lineEdit, SLOT(clear()));
-	connect(this, SIGNAL(startGame()), &server, SLOT(startGame()));
-	connect(&server, SIGNAL(error(QString)), this, SLOT(errorFromServer()));
-	dialog = new OptDialog(this);
-	dialog->show();
-}
-
+//=====================================OptDialog============================================
 OptDialog::OptDialog(App* app) {
 	setupUi(this);
 	this->app = app;
@@ -71,17 +34,17 @@ void OptDialog::connectBtnClicked() {
 		textEdit->clear();
 	}
 	switch (comboBox->currentIndex()) {
-		case 0: app->localClient.info.color = Qt::red; break;
-		case 1: app->localClient.info.color = Qt::darkYellow; break;
-		case 2: app->localClient.info.color = Qt::green; break;
-		case 3: app->localClient.info.color = Qt::blue; break;
+		case 0: app->localClient.setColor(Qt::red); break;
+		case 1: app->localClient.setColor(Qt::darkYellow); break;
+		case 2: app->localClient.setColor(Qt::green); break;
+		case 3: app->localClient.setColor(Qt::blue); break;
 		default: QMessageBox::warning(this, "Error", "Incorrect color"); return;
 	}
-	app->localClient.info.name = leNickname->text();
-	if (app->localClient.info.name=="") {
+	app->localClient.setNickname(leNickname->text());
+	if (app->localClient.getNickname()=="") {
 		QMessageBox::warning(this, "Error", "Enter nickname");
 		return;
-	} else if (app->localClient.info.name.toUtf8().size()>100) {
+	} else if (app->localClient.getNickname().toUtf8().size()>100) {
 		QMessageBox::warning(this, "Error", "Your nickname is too long");
 		return;
 	}
@@ -98,11 +61,12 @@ void OptDialog::connectBtnClicked() {
 		close();
 		app->game = new Game(app);
 		//game signals
-		connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
-		connect(app->game, SIGNAL(playerRetired(QString, QColor)), app, SLOT(playerSurrendered(QString,QColor)));
+//		connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
+//		connect(app->game, SIGNAL(playerRetired(QString, QColor)), app, SLOT(playerSurrendered(QString,QColor)));
+		connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), &(app->localClient), SLOT(turnDone(QString,QColor,QString,int,int,int)));
+		connect(app->game, SIGNAL(playerRetired(QString, QColor)), &(app->localClient), SLOT(playerSurrendered(QString,QColor)));
 		app->show();
-		app->localClient.socket->connectToHost(hostname, port);
-		app->localtimer.start();
+		app->localClient.start(hostname,port);
 	} else { // create server and connect to it
 		QString hostname = "localhost";
 		int port = sbPort->value();
@@ -112,11 +76,12 @@ void OptDialog::connectBtnClicked() {
 			close();
 			app->game = new Game(app);
 			//game signals
-			connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
-			connect(app->game, SIGNAL(playerRetired(QString, QColor)), app, SLOT(playerSurrendered(QString,QColor)));
+//			connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
+//			connect(app->game, SIGNAL(playerRetired(QString, QColor)), app, SLOT(playerSurrendered(QString,QColor)));
+			connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), &(app->localClient), SLOT(turnDone(QString,QColor,QString,int,int,int)));
+			connect(app->game, SIGNAL(playerRetired(QString, QColor)), &(app->localClient), SLOT(playerSurrendered(QString,QColor)));
 			app->show();
-			app->localClient.socket->connectToHost(hostname, port);
-			app->localtimer.start();
+			app->localClient.start(hostname, port);
 		} else {
 			QMessageBox::critical(this, "Error", app->server.getErrorString());
 			return;
@@ -177,35 +142,32 @@ void OptDialog::timeout() {
 	quint16 port = sbPort->value();
 	socket.writeDatagram((char*)&query, sizeof(query), INADDR_BROADCAST, port);
 }
+//=========================Functions======================================================
+App::App(QWidget *parent) {
+	setupUi(this);
+	connect(&localClient, SIGNAL(lcChatMessageReceive(ChatMessage)), this, SLOT(localChatMessageReceive(ChatMessage)));
+	connect(&localClient, SIGNAL(lcPlayersListMessageReceive(PlayersListMessage)), this, SLOT(localPlayersListMessageReceive(PlayersListMessage)));
+	connect(&localClient, SIGNAL(lcClientConnectMessageReceive(ClientConnectMessage)), this, SLOT(localClientConnectMessageReceive(ClientConnectMessage)));
+	connect(&localClient, SIGNAL(lcClientDisconnectMessageReceive(ClientDisconnectMessage)), this, SLOT(localClientDisconnectMessageReceive(ClientDisconnectMessage)));
+	connect(&localClient, SIGNAL(lcConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)), this, SLOT(localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)));
+	connect(&localClient, SIGNAL(lcStartGameMessageReceive(StartGameMessage)), this, SLOT(localStartGameMessageReceive(StartGameMessage)));
+	connect(&localClient, SIGNAL(lcTurnMessageReceive(TurnMessage)), this, SLOT(localTurnMessageReceive(TurnMessage)));
+	connect(&localClient, SIGNAL(lcSurrenderMessageReceive(SurrenderMessage)), this, SLOT(localSurrenderMessageReceive(SurrenderMessage)));
+	connect(&localClient, SIGNAL(lcConnected()), this, SLOT(localConnected()));
+	connect(&localClient, SIGNAL(lcDisconnected()), this, SLOT(localDisconnected()));
+	connect(&localClient, SIGNAL(lcError()), this, SLOT(localError()));
 
-void App::turnDone(QString name,QColor color,QString tile,int id,int x,int y) {
-	TurnMessage msg(name,color,tile,id,x,y);
-	msg.send(localClient.socket);
-}
-
-void App::localSurrenderMessageReceive(SurrenderMessage msg) {
-	game->remotePlayerRetired(msg.getName(),msg.getColor());
-}
-
-void App::a_startGame() {
-	if (server.isRunning()) {
-		if (server.getPlayersCount()==server.getMaxClientsCount()) {
-			game->start();
-			emit startGame();
-			//StartGameMessage msg;
-			//server.sendToAll(&msg);
-		} else
-			QMessageBox::warning(this, "Warning", "Wait for "+QString::number(server.getMaxClientsCount())+" players");
-	} else
-		QMessageBox::warning(this, "Warning", "Only server can start the game");
-}
-
-void App::localStartGameMessageReceive(StartGameMessage msg) {
-	game->start();
-}
-
-void App::localTurnMessageReceive(TurnMessage msg) {
-	game->turnDone(msg.getColor(),msg.getMask(),msg.getId(),msg.getX(),msg.getY());
+	connect(actionExit, SIGNAL(activated()), this, SLOT(a_exit()));
+	connect(actionStartGame, SIGNAL(activated()), this, SLOT(a_startGame()));
+	connect(actionDisconnectFromServer, SIGNAL(activated()), this, SLOT(a_disconnectFromServer()));
+	connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(le_sendMessage()));
+	connect(lineEdit, SIGNAL(returnPressed()), lineEdit, SLOT(clear()));
+	
+	connect(this, SIGNAL(startGame()), &server, SLOT(startGame()));
+	connect(this, SIGNAL(sendMessage()), &localClient, SLOT(sendMessage()));
+	
+	dialog = new OptDialog(this);
+	dialog->show();
 }
 
 void App::perror(QString text) {
@@ -217,27 +179,54 @@ void App::pinfo(QString text) {
 	textEdit->setTextColor(Qt::darkBlue);
 	textEdit->append(text);
 }
-//===========================Timer ping=========================================
-void App::localPingMessageReceive(PingMessage msg) {
-	msg.send(localClient.socket);
-	localClient.lastpingtime.start();
-}
 
-void App::localTimerCheck() {
-	int elapsed = localClient.lastpingtime.elapsed();
-	if (elapsed > PING_TIME) {
-		perror(QString::fromUtf8("Проверьте кабель"));
-		localClient.socket->close();
-	}
-}
-//===========================Timer ping=========================================
 App::~App() {
 	delete dialog;
 	server.quit();
+	localClient.quit();
+}
+//==============================Graphics slots============================================
+void App::a_startGame() {
+	if (server.isRunning()) {
+		if (server.getPlayersCount()==server.getMaxClientsCount()) {
+			game->start();
+			emit startGame();
+		} else
+			QMessageBox::warning(this, "Warning", "Wait for "+QString::number(server.getMaxClientsCount())+" players");
+	} else
+		QMessageBox::warning(this, "Warning", "Only server can start the game");
 }
 
 void App::a_exit() {
 	std::exit(0);
+}
+
+void App::a_disconnectFromServer() {
+	localClient.quit();
+	server.quit();
+	close();
+	dialog->show();
+}
+
+void App::le_sendMessage() {
+	if (localClient.isConnected()) {
+		QString text = lineEdit->text();
+		if (text != "")
+			emit sendMessage(text);
+	} else
+		perror(QString::fromUtf8("Подключение утеряно"));
+}
+//===============================LocalClient slots========================================
+void App::localSurrenderMessageReceive(SurrenderMessage msg) {
+	game->remotePlayerRetired(msg.getName(),msg.getColor());
+}
+
+void App::localStartGameMessageReceive(StartGameMessage msg) {
+	game->start();
+}
+
+void App::localTurnMessageReceive(TurnMessage msg) {
+	game->turnDone(msg.getColor(),msg.getMask(),msg.getId(),msg.getX(),msg.getY());
 }
 
 void App::localChatMessageReceive(ChatMessage msg) {
@@ -253,21 +242,10 @@ void App::localPlayersListMessageReceive(PlayersListMessage msg) {
 	QList<bool> isLocal;
 	for (int i=0;i<list.size();++i) {
 		listWidget->addItem(list[i].name);
-		isLocal.append(list[i].name==localClient.info.name&&list[i].color==localClient.info.color);
+		isLocal.append(list[i].name==localClient.getNickname()&&list[i].color==localClient.getColor());
 	}
 	listWidget->sortItems();
 	game->updatePlayers(list,isLocal);
-}
-
-void App::le_sendMessage() {
-	if (localClient.socket->isConnected()) {
-		QString text = lineEdit->text();
-		if (text != "") {
-			ChatMessage msg(localClient.info.name,text,localClient.info.color);
-			msg.send(localClient.socket);
-		}
-	} else
-		perror(QString::fromUtf8("Подключение утеряно"));
 }
 
 void App::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage msg) {
@@ -276,49 +254,26 @@ void App::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage msg) {
 		switch (msg.getCode()) {
 			case 1: perror(QString::fromUtf8("Этот цвет уже используется")); break;
 			case 2: perror(QString::fromUtf8("Этот ник уже используется")); break;
-			//case 3: perror(QString::fromUtf8("Игра уже начата. Попробуйте подключиться позднее")); break;
 			case 4: perror(QString::fromUtf8("К игре уже подключились ")+
 				QString::number(server.getMaxClientsCount())
 				+QString::fromUtf8(" игрока")); break;
 		}
-		localClient.socket->close();
-		localtimer.stop();
+		localClient.quit();
 	}
 }
 
-void App::a_disconnectFromServer() {
-	localClient.socket->disconnectFromHost();
-	localtimer.stop();
-	server.quit();
-	close();
-	dialog->show();
-}
-
-void App::playerSurrendered(QString name,QColor color) {
-	SurrenderMessage msg(name,color);
-	msg.send(localClient.socket);
-}
-
-
-void App::connected() {
+void App::localConnected() {
 	pinfo("Connected");
 }
 
-void App::localServerReadyMessageReceive(ServerReadyMessage) {
-	TryToConnectMessage msg(localClient.info);
-	msg.send(localClient.socket);
-}
-
-void App::disconnected() {
+void App::localDisconnected() {
 	pinfo("Disconnected");
 	listWidget->clear();
 	delete game;
 }
 
-void App::error() {
-	perror("local error "+localClient.socket->errorString());
-	localClient.socket->close();
-	localtimer.stop();
+void App::localError() {
+	localClient.quit();
 	server.quit();
 }
 
