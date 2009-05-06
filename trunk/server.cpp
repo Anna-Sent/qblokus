@@ -48,7 +48,7 @@ bool Server::start(int maxClientsCount, quint16 port) {
 		listener.bind(INADDR_ANY, port);
 		QThread::start();
 	}
-	return listen;
+	return listening;
 }
 
 void Server::run() {
