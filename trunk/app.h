@@ -2,9 +2,9 @@
 #define APP_H
 #include "ui_racingForm.h"
 #include "ui_optionsDialog.h"
-#include "socket.h"
+//#include "socket.h"
 #include "udpsocket.h"
-#include "messagerecv.h"
+//#include "messagerecv.h"
 #include <iostream>
 #include "game.h"
 #include <QTimer>
@@ -48,16 +48,15 @@ private:
 public:
 	Game *game;
 public slots:
-	void startGame();
-	void ping();
+	void a_startGame();
 	void localPingMessageReceive(PingMessage);
 	void localTimerCheck();
-	void sendMessage();
+	void le_sendMessage();
 	void connected();
 	void disconnected();
 	void error();
-	void exit();
-	void disconnectFromServer();
+	void a_exit();
+	void a_disconnectFromServer();
 	void localChatMessageReceive(ChatMessage);
 	void localPlayersListMessageReceive(PlayersListMessage);
 	void localServerReadyMessageReceive(ServerReadyMessage);
@@ -70,5 +69,7 @@ public slots:
 	void localSurrenderMessageReceive(SurrenderMessage);
 	void turnDone(QString,QColor,QString,int,int,int);
 	void playerSurrendered(QString,QColor);
+signals:
+	void startGame();
 };
 #endif

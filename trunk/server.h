@@ -6,20 +6,34 @@
 #include "messagerecv.h"
 #include "client.h"
 
-class Server : public QObject {
+class Server : public QThread {
 	Q_OBJECT
-public:
+private:
 	TCPServer serverConnection;
 	UDPSocket listener;
 	QList<RemoteClient*> clients;
 	QTimer timer;
 	int maxClientsCount;
-	void stop();
-	void sendToAll(Message*);
+	//quint16 port;
+public:
+	//void setMaxClientsCount(int value) {this->maxClientsCount=value;}
+	int getMaxClientsCount() {return maxClientsCount;}
+	//void setPort(quint16 value) {this->port=port;}
+	//bool isRunning() {return serverConnection.isListening();}
+	Server();
+	QString getErrorString() {return serverConnection.errorString();}
+	int getPlayersCount() {int count = 0;for(int i=0;i<clients.size();++i) if (clients[i]->state==2&&clients[i]->socket->isConnected()) ++count;return count;}
+	bool start(int maxClientsCount, quint16 port);
 private:
+	void stop();
 	void sendPlayersList();
+	void sendToAll(Message*);
 	void removeClient(RemoteClient*);
+protected:
+	void run();
 private slots:
+	//from app
+	void startGame();
 	//from timer
 	void ping();
 	//from udpsocket

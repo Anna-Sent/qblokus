@@ -1,4 +1,4 @@
-#inlcude "server.h"
+#include "server.h"
 #define MAGIC_NUMBER	110807
 #define PING_INTERVAL	5000
 #define PING_TIME		15000		
@@ -38,6 +38,22 @@ Server::Server() {
 	connect(&listener, SIGNAL(readyRead()), this, SLOT(readyReadUDP()));
 	timer.setInterval(PING_INTERVAL);
 	connect(&timer, SIGNAL(timeout()), this, SLOT(ping()));
+}
+
+bool Server::start(int maxClientsCount, quint16 port) {
+	this->maxClientsCount = maxClientsCount;
+	bool listening = serverConnection.listen(port);
+	if (listening) {
+		timer.start();
+		listener.bind(INADDR_ANY, port);
+		QThread::start();
+	}
+	return listen;
+}
+
+void Server::run() {
+	exec();
+	stop();
 }
 
 void Server::stop() {
@@ -82,12 +98,11 @@ void Server::remoteTryToConnectMessageReceive(TryToConnectMessage msg, RemoteCli
 		error=1;
 	for (i=0; i<clients.size() && (msg.getName()!=clients[i]->info.name || clients[i]->state!=2); ++i) {}
 	if (i!=clients.size())
-		error=2;
+		error=2;/*
 	if (game->isStarted())
-		error=3;
-	int count = 0;
-	for (i=0;i<clients.size();++i) if (clients[i]->state==2) ++count;
-	if (count==maxClientsCount)
+		error=3;*/
+	
+	if (getPlayersCount()==maxClientsCount)
 		error=4;
 	ConnectionAcceptedMessage msg1(error);
 	msg1.send(client->socket);
@@ -149,5 +164,10 @@ void Server::sendPlayersList() {
 		if (clients[i]->state==2&&clients[i]->socket->isConnected())
 			list.append(clients[i]->info);
 	PlayersListMessage msg(list);
+	sendToAll(&msg);
+}
+
+void Server::startGame() {
+	StartGameMessage msg;
 	sendToAll(&msg);
 }
