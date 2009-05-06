@@ -12,8 +12,6 @@
 #include "client.h"
 
 class App;
-//class RemoteClient;
-//class LocalClient;
 
 class OptDialog : public QDialog, public Ui::Dialog {
 	Q_OBJECT
@@ -53,7 +51,7 @@ private:
 	void pinfo(QString);
 	void sendToAll(Message*);
 	void stopServer();
-	void removeClient(int);
+	void removeClient(RemoteClient*);
 public:
 	Game *game;
 public slots:
@@ -61,21 +59,16 @@ public slots:
 	void startGame();
 	void ping();
 	void localPingMessageReceive(PingMessage);
-	void remotePingMessageReceive(PingMessage);
 	void localTimerCheck();
 	void sendMessage();
-	void remoteChatMessageReceive(ChatMessage);
 	void connected();
 	void disconnected();
-	void remoteDisconnected();
 	void error();
-	void remoteError();
 	void exit();
 	void disconnectFromServer();
 	void newConnection();
 	void localChatMessageReceive(ChatMessage);
 	void localPlayersListMessageReceive(PlayersListMessage);
-	void remoteTryToConnectMessageReceive(TryToConnectMessage);
 	void localServerReadyMessageReceive(ServerReadyMessage);
 	void localClientConnectMessageReceive(ClientConnectMessage);
 	void localClientDisconnectMessageReceive(ClientDisconnectMessage);
@@ -83,11 +76,16 @@ public slots:
 	// game signals
 	void localTurnMessageReceive(TurnMessage);
 	void localStartGameMessageReceive(StartGameMessage);
-	void remoteTurnMessageReceive(TurnMessage);
 	void localSurrenderMessageReceive(SurrenderMessage);
-	void remoteSurrenderMessageReceive(SurrenderMessage);
-
 	void turnDone(QString,QColor,QString,int,int,int);
 	void playerSurrendered(QString,QColor);
+	//from remote client
+	void remoteChatMessageReceive(ChatMessage,RemoteClient*);
+	void remoteTryToConnectMessageReceive(TryToConnectMessage,RemoteClient*);
+	void remotePingMessageReceive(PingMessage,RemoteClient*);
+	void remoteTurnMessageReceive(TurnMessage,RemoteClient*);
+	void remoteSurrenderMessageReceive(SurrenderMessage,RemoteClient*);
+	void remoteDisconnected(RemoteClient*);
+	void remoteError(RemoteClient*);
 };
 #endif

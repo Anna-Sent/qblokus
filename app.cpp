@@ -236,12 +236,11 @@ void App::localTurnMessageReceive(TurnMessage msg) {
 	game->turnDone(msg.getColor(),msg.getMask(),msg.getId(),msg.getX(),msg.getY());
 }
 
-void App::remoteTurnMessageReceive(TurnMessage msg) {
+void App::remoteTurnMessageReceive(TurnMessage msg, RemoteClient*) {
 	sendToAll(&msg);
 }
 
-void App::remoteSurrenderMessageReceive(SurrenderMessage msg)
-{
+void App::remoteSurrenderMessageReceive(SurrenderMessage msg, RemoteClient*) {
 	sendToAll(&msg);
 }
 
@@ -283,15 +282,8 @@ void App::localTimerCheck() {
 	}
 }
 
-void App::remotePingMessageReceive(PingMessage) {
-	MessageReceiver *r = dynamic_cast<MessageReceiver*>(sender());
-	if (r) {
-		int j;
-		for (j = 0; j< clients.size() && r!=clients[j]->receiver; ++j) {}
-		if (j != clients.size()) {
-			clients[j]->lastpingtime.start();
-		}
-	}
+void App::remotePingMessageReceive(PingMessage, RemoteClient* client) {
+	client->lastpingtime.start();
 }
 //===========================Timer ping=========================================
 App::~App() {
@@ -310,7 +302,7 @@ void App::localChatMessageReceive(ChatMessage msg) {
 	textEdit->append(msg.getText());
 }
 
-void App::remoteChatMessageReceive(ChatMessage msg) {
+void App::remoteChatMessageReceive(ChatMessage msg, RemoteClient*) {
 	sendToAll(&msg);
 }
 
@@ -395,37 +387,29 @@ void App::sendPlayersList() {
 void App::newConnection() {
 	if (serverConnection.hasPendingConnections()) {
 		TCPSocket* s = serverConnection.nextPendingConnection();
-		MessageReceiver *rr = new MessageReceiver(s);
-		connect(rr, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(remoteChatMessageReceive(ChatMessage)));
-		connect(rr, SIGNAL(tryToConnectMessageReceive(TryToConnectMessage)), this, SLOT(remoteTryToConnectMessageReceive(TryToConnectMessage)));
-		connect(rr, SIGNAL(pingMessageReceive(PingMessage)), this, SLOT(remotePingMessageReceive(PingMessage)));
-		connect(rr, SIGNAL(turnMessageReceive(TurnMessage)), this, SLOT(remoteTurnMessageReceive(TurnMessage)));
-		connect(rr, SIGNAL(surrenderMessageReceive(SurrenderMessage)), this, SLOT(remoteSurrenderMessageReceive(SurrenderMessage)));
-		connect(s, SIGNAL(disconnected()), this, SLOT(remoteDisconnected()));
-		connect(s, SIGNAL(error()), this, SLOT(remoteError()));
+		RemoteClient *client = new RemoteClient(s);
+		connect(client, SIGNAL(rcChatMessageReceive(ChatMessage,RemoteClient*)), this, SLOT(remoteChatMessageReceive(ChatMessage,RemoteClient*)));
+		connect(client, SIGNAL(rcCryToConnectMessageReceive(TryToConnectMessage,RemoteClient*)), this, SLOT(remoteTryToConnectMessageReceive(TryToConnectMessage,RemoteClient*)));
+		connect(client, SIGNAL(rcPingMessageReceive(PingMessage,RemoteClient*)), this, SLOT(remotePingMessageReceive(PingMessage,RemoteClient*)));
+		connect(client, SIGNAL(rcTurnMessageReceive(TurnMessage,RemoteClient*)), this, SLOT(remoteTurnMessageReceive(TurnMessage,RemoteClient*)));
+		connect(client, SIGNAL(rcSurrenderMessageReceive(SurrenderMessage,RemoteClient*)), this, SLOT(remoteSurrenderMessageReceive(SurrenderMessage,RemoteClient*)));
+		connect(client, SIGNAL(rcDisconnected(RemoteClient*)), this, SLOT(remoteDisconnected(RemoteClient*)));
+		connect(client, SIGNAL(rcError(RemoteClient*)), this, SLOT(remoteError(RemoteClient*)));
 
-		RemoteClient *client = new RemoteClient;
-		client->socket = s;
+		/*client->socket = s;
 		client->receiver = rr;
-		client->state = 1;
+		client->state = 1;*/
 		clients.append(client);
 		ServerReadyMessage msg;
 		msg.send(s);
 	}
 }
 
-void App::remoteDisconnected() {
-	TCPSocket *s = dynamic_cast<TCPSocket*>(sender());
-	if (s) {
-		int i;
-		for (i = 0; i < clients.size() && s != clients[i]->socket; ++i) {}
-		if (i != clients.size()) {
-			ClientDisconnectMessage msg(clients[i]->info.name, clients[i]->info.color);
-			removeClient(i);
-			sendToAll(&msg);
-			sendPlayersList();
-		} else s->deleteLater();
-	}
+void App::remoteDisconnected(RemoteClient *client) {
+	ClientDisconnectMessage msg(client->info.name, client->info.color);
+	removeClient(client);
+	sendToAll(&msg);
+	sendPlayersList();
 }
 
 void App::disconnected() {
@@ -441,50 +425,35 @@ void App::error() {
 	stopServer();
 }
 
-void App::remoteError() {
-	TCPSocket *s = dynamic_cast<TCPSocket*>(sender());
-	if (s) {
-		int i;
-		int count = clients.size();
-		for (i=0; i<clients.size()&&s!=clients[i]->socket; ++i) {}
-		if (i != count) {
-			perror("remote error "+s->errorString());
-			s->close();
-		}
-	}
+void App::remoteError(RemoteClient *client) {
+	client->socket->close();
 }
 
-void App::remoteTryToConnectMessageReceive(TryToConnectMessage msg) {
-	MessageReceiver *r = dynamic_cast<MessageReceiver*>(sender());
-	if (r) {
-		int j;
-		for (j = 0; j< clients.size() && r!=clients[j]->receiver; ++j) {}
-		if (j != clients.size()) {
-			int i, error=0;
-			for (i=0; i<clients.size()&&msg.getColor()!=clients[i]->info.color; ++i) {}
-			if (i!=clients.size())
-				error=1;
-			for (i=0; i<clients.size()&&msg.getName()!=clients[i]->info.name; ++i) {}
-			if (i!=clients.size())
-				error=2;
-			if (game->isStarted())
-				error=3;
-			if (clients.size()>maxClientsCount)
-				error=4;
-			ConnectionAcceptedMessage msg1(error);
-			msg1.send(clients[j]->socket);
-			if (!error) {
-				clients[j]->info.name = msg.getName();
-				clients[j]->info.color = msg.getColor();
-				clients[j]->state = 2;
-				ClientConnectMessage msg1(msg.getName(), msg.getColor());
-				sendToAll(&msg1);
-				sendPlayersList();
-			} else {
-				removeClient(i);
-			}
-		}
-	}
+void App::remoteTryToConnectMessageReceive(TryToConnectMessage msg, RemoteClient* client) {
+	int i, error=0;
+	for (i=0; i<clients.size() && (msg.getColor()!=clients[i]->info.color || clients[i]->state!=2); ++i) {}
+	if (i!=clients.size())
+		error=1;
+	for (i=0; i<clients.size() && (msg.getName()!=clients[i]->info.name || clients[i]->state!=2); ++i) {}
+	if (i!=clients.size())
+		error=2;
+	if (game->isStarted())
+		error=3;
+	int count = 0;
+	for (i=0;i<clients.size();++i) if (clients[i]->state==2) ++count;
+	if (count==maxClientsCount)
+		error=4;
+	ConnectionAcceptedMessage msg1(error);
+	msg1.send(client->socket);
+	if (!error) {
+		client->info.name = msg.getName();
+		client->info.color = msg.getColor();
+		client->state = 2;
+		ClientConnectMessage msg1(msg.getName(), msg.getColor());
+		sendToAll(&msg1);
+		sendPlayersList();
+	} else
+		removeClient(client);
 }
 
 void App::localClientConnectMessageReceive(ClientConnectMessage msg) {
@@ -509,8 +478,7 @@ void App::stopServer() {
 	}
 }
 
-void App::removeClient(int i) {
-	RemoteClient *client = clients[i];
-	clients.removeAt(i);
+void App::removeClient(RemoteClient* client) {
+	clients.removeAt(clients.indexOf(client));
 	client->deleteLater();
 }
