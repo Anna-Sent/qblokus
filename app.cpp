@@ -300,10 +300,7 @@ void App::remotePingMessageReceive(PingMessage) {
 //===========================Timer ping=========================================
 App::~App() {
 	delete dialog;
-	serverConnection.close();
-	timer.stop();
-	listener.close();
-	for (int j=0;j<clients.size();delete clients[j++]) {}
+	stopServer();
 }
 
 void App::exit() {
@@ -370,18 +367,7 @@ void App::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage msg) {
 void App::disconnectFromServer() {
 	localClient.socket->disconnectFromHost();
 	localtimer.stop();
-	if (serverConnection.isListening()) {
-		serverConnection.close();
-		listener.close();
-		timer.stop();
-		while (clients.size()>0) {
-			Client *client = clients[0];
-			clients.removeAt(0);
-			client->socket->close();
-			client->deleteLater();
-		}
-		clients.clear();
-	}
+	stopServer();
 	close();
 	dialog->show();
 }
@@ -460,18 +446,7 @@ void App::error() {
 	perror("local error "+localClient.socket->errorString());
 	localClient.socket->close();
 	localtimer.stop();
-	if (serverConnection.isListening()) {
-		serverConnection.close();
-		timer.stop();
-		listener.close();
-		while (clients.size()>0) {
-			Client *client = clients[0];
-			clients.removeAt(0);
-			client->socket->close();
-			client->deleteLater();
-		}
-		clients.clear();
-	}
+	stopServer();
 }
 
 void App::remoteError() {
@@ -535,4 +510,19 @@ void App::localClientConnectMessageReceive(ClientConnectMessage msg) {
 void App::localClientDisconnectMessageReceive(ClientDisconnectMessage msg) {
 	textEdit->setTextColor(msg.getColor());
 	textEdit->append(msg.getName()+" disconnected");
+}
+
+void App::stopServer() {
+	if (serverConnection.isListening()) {
+		serverConnection.close();
+		listener.close();
+		timer.stop();
+		while (clients.size()>0) {
+			Client *client = clients[0];
+			clients.removeAt(0);
+			client->socket->close();
+			client->deleteLater();
+		}
+		clients.clear();
+	}
 }

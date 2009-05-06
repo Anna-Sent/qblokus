@@ -61,6 +61,7 @@ private:
 	void perror(QString);
 	void pinfo(QString);
 	void sendToAll(Message*);
+	void stopServer();
 public:
 	Game *game;
 public slots:
