@@ -126,7 +126,7 @@ void Server::newConnection() {
 		TCPSocket* s = serverConnection.nextPendingConnection();
 		RemoteClient *client = new RemoteClient(s);
 		connect(client, SIGNAL(rcChatMessageReceive(ChatMessage,RemoteClient*)), this, SLOT(remoteChatMessageReceive(ChatMessage,RemoteClient*)));
-		connect(client, SIGNAL(rcCryToConnectMessageReceive(TryToConnectMessage,RemoteClient*)), this, SLOT(remoteTryToConnectMessageReceive(TryToConnectMessage,RemoteClient*)));
+		connect(client, SIGNAL(rcTryToConnectMessageReceive(TryToConnectMessage,RemoteClient*)), this, SLOT(remoteTryToConnectMessageReceive(TryToConnectMessage,RemoteClient*)));
 		connect(client, SIGNAL(rcPingMessageReceive(PingMessage,RemoteClient*)), this, SLOT(remotePingMessageReceive(PingMessage,RemoteClient*)));
 		connect(client, SIGNAL(rcTurnMessageReceive(TurnMessage,RemoteClient*)), this, SLOT(remoteTurnMessageReceive(TurnMessage,RemoteClient*)));
 		connect(client, SIGNAL(rcSurrenderMessageReceive(SurrenderMessage,RemoteClient*)), this, SLOT(remoteSurrenderMessageReceive(SurrenderMessage,RemoteClient*)));
