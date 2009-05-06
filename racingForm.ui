@@ -125,12 +125,12 @@
     <addaction name="actionStartGame" />
     <addaction name="actionDisconnectFromServer" />
     <addaction name="separator" />
-    <addaction name="a_exit" />
+    <addaction name="actionExit" />
    </widget>
    <addaction name="menu" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />
-  <action name="a_exit" >
+  <action name="actionExit" >
    <property name="text" >
     <string>Выход</string>
    </property>

@@ -188,4 +188,3 @@ class MessageReceiver : public QObject {
 		void surrenderMessageReceive(SurrenderMessage);
 };
 #endif
-
