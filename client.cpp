@@ -89,12 +89,16 @@ void LocalClient::localConnectionAcceptedMessageReceive(ConnectionAcceptedMessag
 	emit lcConnectionAcceptedMessageReceive(msg);
 }
 
-void LocalClient::localStartGameMessageReceive(StartGameMessage) {
-}
-void LocalClient::localTurnMessageReceive(TurnMessage) {
+void LocalClient::localStartGameMessageReceive(StartGameMessage msg) {
+	emit lcStartGameMessageReceive(msg);
 }
 
-void LocalClient::localSurrenderMessageReceive(SurrenderMessage) {
+void LocalClient::localTurnMessageReceive(TurnMessage msg) {
+	emit lcTurnMessageReceive(msg);
+}
+
+void LocalClient::localSurrenderMessageReceive(SurrenderMessage msg) {
+	emit lcSurrenderMessageReceive(msg);
 }
 
 void LocalClient::localConnected() {

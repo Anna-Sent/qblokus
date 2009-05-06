@@ -30,9 +30,10 @@ void OptDialog::connectBtnClicked() {
 		socket.close();
 		pbSearch->setText("Start search");
 		sbPort->setDisabled(false);
-		servers.clear();
-		textEdit->clear();
 	}
+	textEdit->clear();
+	lwServersList->clear();
+	servers.clear();
 	switch (comboBox->currentIndex()) {
 		case 0: app->localClient.setColor(Qt::red); break;
 		case 1: app->localClient.setColor(Qt::darkYellow); break;
@@ -51,33 +52,28 @@ void OptDialog::connectBtnClicked() {
 	app->textEdit->clear();
 	app->listWidget->clear();
 	app->lineEdit->clear();
+	int port = sbPort->value();
 	if (!cbCreateServer->checkState()) { // connect to some server
 		QString hostname = leServerIP->text();
 		if (hostname=="") {
 			QMessageBox::warning(this, "Error", "Enter host name");
 			return;
 		}
-		int port = sbPort->value();
 		close();
 		app->game = new Game(app);
 		//game signals
-//		connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
-//		connect(app->game, SIGNAL(playerRetired(QString, QColor)), app, SLOT(playerSurrendered(QString,QColor)));
 		connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), &(app->localClient), SLOT(turnDone(QString,QColor,QString,int,int,int)));
 		connect(app->game, SIGNAL(playerRetired(QString, QColor)), &(app->localClient), SLOT(playerSurrendered(QString,QColor)));
 		app->show();
 		app->localClient.start(hostname,port);
 	} else { // create server and connect to it
 		QString hostname = "localhost";
-		int port = sbPort->value();
 		int maxClientsCount = sbClientsCount->value();
 		bool listening = app->server.start(maxClientsCount,port);
 		if (listening) {
 			close();
 			app->game = new Game(app);
 			//game signals
-//			connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), app, SLOT(turnDone(QString,QColor,QString,int,int,int)));
-//			connect(app->game, SIGNAL(playerRetired(QString, QColor)), app, SLOT(playerSurrendered(QString,QColor)));
 			connect(app->game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), &(app->localClient), SLOT(turnDone(QString,QColor,QString,int,int,int)));
 			connect(app->game, SIGNAL(playerRetired(QString, QColor)), &(app->localClient), SLOT(playerSurrendered(QString,QColor)));
 			app->show();
@@ -121,18 +117,18 @@ void OptDialog::getServersList() {
 }
 
 void OptDialog::searchBtnClicked() {
-	if (timer.isActive()) {
+	if (timer.isActive()) { // stop pressed
 		timer.stop();
 		socket.close();
 		pbSearch->setText("Start search");
 		sbPort->setDisabled(false);
-		textEdit->clear();
-	} else {
+	} else { // start pressed
 		lwServersList->clear();
+		textEdit->clear();
 		servers.clear();
 		socket.bind(INADDR_ANY, 0);
-		sbPort->setDisabled(true);
 		timer.start();
+		sbPort->setDisabled(true);
 		pbSearch->setText("Stop search");
 	}
 }
