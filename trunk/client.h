@@ -47,3 +47,4 @@ signals:
 	void rcDisconnected(RemoteClient*);
 	void rcError(RemoteClient*);
 };
+

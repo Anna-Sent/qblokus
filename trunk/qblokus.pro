@@ -5,7 +5,8 @@ SOURCES = socket.cpp \
 	app.cpp \
 	messagerecv.cpp \
 	clientinfo.cpp \
-	udpsocket.cpp
+	udpsocket.cpp \
+	client.cpp
 
 HEADERS = socket.h \
 	app.h \
