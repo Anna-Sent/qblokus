@@ -29,6 +29,21 @@ public:
 	ClientInfo info;
 public:
 	~RemoteClient() { delete receiver; socket->deleteLater(); }
-	RemoteClient():state(0),lastpingtime(QTime::currentTime()),socket(NULL),receiver(NULL) {}
+	RemoteClient(TCPSocket*);
+private slots:
+	void remoteChatMessageReceive(ChatMessage);
+	void remoteTryToConnectMessageReceive(TryToConnectMessage);
+	void remotePingMessageReceive(PingMessage);
+	void remoteTurnMessageReceive(TurnMessage);
+	void remoteSurrenderMessageReceive(SurrenderMessage);
+	void remoteDisconnected();
+	void remoteError();
+signals:
+	void rcChatMessageReceive(ChatMessage,RemoteClient*);
+	void rcTryToConnectMessageReceive(TryToConnectMessage,RemoteClient*);
+	void rcPingMessageReceive(PingMessage,RemoteClient*);
+	void rcTurnMessageReceive(TurnMessage,RemoteClient*);
+	void rcSurrenderMessageReceive(SurrenderMessage,RemoteClient*);
+	void rcDisconnected(RemoteClient*);
+	void rcError(RemoteClient*);
 };
-
