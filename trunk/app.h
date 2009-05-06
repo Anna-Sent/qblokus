@@ -9,8 +9,11 @@
 #include "game.h"
 #include <QTimer>
 #include <QTime>
+#include "client.h"
 
 class App;
+//class RemoteClient;
+//class LocalClient;
 
 class OptDialog : public QDialog, public Ui::Dialog {
 	Q_OBJECT
@@ -28,31 +31,6 @@ public slots:
 	void getServersList();
 	void timeout();
 	void itemClicked ( QListWidgetItem * item );
-};
-
-class LocalClient : public QObject {
-	Q_OBJECT
-public:
-	QTime lastpingtime; // for remote and local client
-	TCPSocket* socket;
-	MessageReceiver* receiver;
-	ClientInfo info;
-public:
-	~LocalClient() { delete receiver; socket->deleteLater(); }
-	LocalClient():lastpingtime(QTime::currentTime()),socket(NULL),receiver(NULL) {}
-};
-
-class RemoteClient : public QObject {
-	Q_OBJECT
-public:
-	int state; // for remote client
-	QTime lastpingtime; // for remote and local client
-	TCPSocket* socket;
-	MessageReceiver* receiver;
-	ClientInfo info;
-public:
-	~RemoteClient() { delete receiver; socket->deleteLater(); }
-	RemoteClient():state(0),lastpingtime(QTime::currentTime()),socket(NULL),receiver(NULL) {}
 };
 
 class App : public QMainWindow, public Ui::MainWindow {
