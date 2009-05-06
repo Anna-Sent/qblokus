@@ -74,4 +74,3 @@ class TCPServer: public QThread {
 		void newConnection();
 };
 #endif
-

@@ -64,7 +64,7 @@ signals:
 	void lcSurrenderMessageReceive(SurrenderMessage);
 	void lcConnected();
 	void lcDisconnected();
-	void lcError();
+	void lcError(QString);
 };
 
 class RemoteClient : public QObject {
