@@ -164,7 +164,7 @@ App::App(QWidget *parent) {
 	connect(lineEdit, SIGNAL(returnPressed()), lineEdit, SLOT(clear()));
 	
 	connect(this, SIGNAL(startGame()), &server, SLOT(startGame()));
-	connect(this, SIGNAL(sendMessage()), &localClient, SLOT(sendMessage()));
+	connect(this, SIGNAL(sendMessage(QString)), &localClient, SLOT(sendMessage(QString)));
 	
 	dialog = new OptDialog(this);
 	dialog->show();
