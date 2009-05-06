@@ -1,3 +1,6 @@
+#ifndef SOCKET_H_
+#define SOCKET_H_
+
 #include <QObject>
 #include <QString>
 #include <QThread>
@@ -70,3 +73,5 @@ class TCPServer: public QThread {
 	signals:
 		void newConnection();
 };
+#endif
+

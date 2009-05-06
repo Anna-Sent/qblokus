@@ -1,3 +1,5 @@
+#ifndef MESSAGERECV_H_
+#define MESSAGERECV_H_
 #include <QObject>
 #include <QList>
 #include <QColor>
@@ -185,3 +187,5 @@ class MessageReceiver : public QObject {
 		void turnMessageReceive(TurnMessage);
 		void surrenderMessageReceive(SurrenderMessage);
 };
+#endif
+
