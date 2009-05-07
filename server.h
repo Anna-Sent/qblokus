@@ -14,12 +14,8 @@ private:
 	QList<RemoteClient*> clients;
 	QTimer timer;
 	int maxClientsCount;
-	//quint16 port;
 public:
-	//void setMaxClientsCount(int value) {this->maxClientsCount=value;}
 	int getMaxClientsCount() {return maxClientsCount;}
-	//void setPort(quint16 value) {this->port=port;}
-	//bool isRunning() {return serverConnection.isListening();}
 	Server();
 	QString getErrorString() {return serverConnection.errorString();}
 	int getPlayersCount() {int count = 0;for(int i=0;i<clients.size();++i) if (clients[i]->state==2&&clients[i]->socket->isConnected()) ++count;return count;}

@@ -120,6 +120,7 @@ void LocalClient::localPingMessageReceive(PingMessage msg) {
 
 void LocalClient::localTimerCheck() {
 	int elapsed = lastpingtime.elapsed();
+	cerr << "client: elapsed "<<elapsed<<endl;
 	if (elapsed > PING_TIME)
 		emit lcError(QString::fromUtf8("Проверьте кабель"));
 }

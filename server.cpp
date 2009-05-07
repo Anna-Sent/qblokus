@@ -47,13 +47,16 @@ bool Server::start(int maxClientsCount, quint16 port) {
 		timer.start();
 		listener.bind(INADDR_ANY, port);
 		QThread::start();
+		cerr<<"server started"<<endl;
 	}
 	return listening;
 }
 
 void Server::run() {
 	exec();
+	cerr<<"server exec"<<endl;
 	stop();
+	cerr<<"server stopped"<<endl;
 }
 
 void Server::stop() {
@@ -75,9 +78,9 @@ void Server::ping() {
 			msg.send(clients[i]->socket);
 			QTime last = clients[i]->lastpingtime;
 			int elapsed = last.elapsed();
+			cerr<<"server: elapsed "<<elapsed<<endl;
 			if (elapsed > PING_TIME) {
-				//perror(QString::fromUtf8("Удаленный клиент отвалился"));
-				clients[i]->socket->close();// client shut down
+				clients[i]->socket->close();
 			}
 		}
 	}
@@ -98,10 +101,7 @@ void Server::remoteTryToConnectMessageReceive(TryToConnectMessage msg, RemoteCli
 		error=1;
 	for (i=0; i<clients.size() && (msg.getName()!=clients[i]->info.name || clients[i]->state!=2); ++i) {}
 	if (i!=clients.size())
-		error=2;/*
-	if (game->isStarted())
-		error=3;*/
-	
+		error=2;
 	if (getPlayersCount()==maxClientsCount)
 		error=4;
 	ConnectionAcceptedMessage msg1(error);

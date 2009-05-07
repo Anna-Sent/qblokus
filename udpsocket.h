@@ -12,7 +12,6 @@ class UDPSocket: public QThread {
 	public:
 		UDPSocket();
 		virtual ~UDPSocket();
-		//qint64 write ( const char * data, qint64 maxSize );
 		bool hasPendingDatagrams () const {return buffer_size>0;}
 		qint64 pendingDatagramSize () const {return buffer_size;}
 		qint64 readDatagram ( char * data, qint64 maxSize, QString * address = 0, quint16 * port = 0 );
@@ -38,4 +37,3 @@ class UDPSocket: public QThread {
 		void readyRead();
 };
 #endif
-

@@ -39,7 +39,6 @@ class ComplexMessage : public Message {
 	protected:
 		MessageHeader header;
 	public:
-//		ComplexMessage(const MessageHeader& header) {this->header=header;}
 		qint64 getLength() const {return header.len;}
 		QByteArray serialize() const { return header.serialize(); }
 		void fill(const QByteArray&) {}
