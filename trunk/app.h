@@ -37,6 +37,7 @@ public:
 private:
 	OptDialog *dialog;
 	Server server;
+	LCWrapper lcw;
 	LocalClient localClient;
 	friend class OptDialog;
 	void perror(QString);

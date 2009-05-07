@@ -1,6 +1,6 @@
 #include "client.h"
 #define PING_INTERVAL	5000
-#define PING_TIME		15000
+#define PING_TIME		1500000
 
 RemoteClient::RemoteClient(TCPSocket *s) : state(1), lastpingtime(QTime::currentTime()) {
 	MessageReceiver *rr = new MessageReceiver(s);
@@ -50,6 +50,17 @@ LocalClient::LocalClient():lastpingtime(QTime::currentTime()) {
 	socket = new TCPSocket;
 	receiver = new MessageReceiver(socket);
 	connect(receiver, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(localChatMessageReceive(ChatMessage)));
+	qRegisterMetaType<PlayersListMessage>("PlayersListMessage");
+	qRegisterMetaType<ClientConnectMessage>("ClientConnectMessage");
+	qRegisterMetaType<ServerReadyMessage>("ServerReadyMessage");
+	qRegisterMetaType<ConnectionAcceptedMessage>("ConnectionAcceptedMessage");
+	qRegisterMetaType<PingMessage>("PingMessage");
+	qRegisterMetaType<StartGameMessage>("StartGameMessage");
+	qRegisterMetaType<TurnMessage>("TurnMessage");
+	qRegisterMetaType<ClientDisconnectMessage>("ClientDisconnectMessage");
+	qRegisterMetaType<SurrenderMessage>("SurrenderMessage");
+	qRegisterMetaType<ChatMessage>("ChatMessage");
+
 	connect(receiver, SIGNAL(playersListMessageReceive(PlayersListMessage)), this, SLOT(localPlayersListMessageReceive(PlayersListMessage)));
 	connect(receiver, SIGNAL(serverReadyMessageReceive(ServerReadyMessage)), this, SLOT(localServerReadyMessageReceive(ServerReadyMessage)));
 	connect(receiver, SIGNAL(clientConnectMessageReceive(ClientConnectMessage)), this, SLOT(localClientConnectMessageReceive(ClientConnectMessage)));
@@ -98,7 +109,9 @@ void LocalClient::localTurnMessageReceive(TurnMessage msg) {
 }
 
 void LocalClient::localSurrenderMessageReceive(SurrenderMessage msg) {
+	std::cerr << "emit Surrender message\n";
 	emit lcSurrenderMessageReceive(msg);
+	std::cerr << "out emit surr mess\n";
 }
 
 void LocalClient::localConnected() {
@@ -121,6 +134,7 @@ void LocalClient::localPingMessageReceive(PingMessage msg) {
 void LocalClient::localTimerCheck() {
 	int elapsed = lastpingtime.elapsed();
 	cerr << "client: elapsed "<<elapsed<<endl;
+	cerr << QTime::currentTime().second() << endl;
 	if (elapsed > PING_TIME)
 		emit lcError(QString::fromUtf8("Проверьте кабель"));
 }

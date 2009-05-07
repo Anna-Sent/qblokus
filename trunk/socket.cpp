@@ -122,7 +122,9 @@ void TCPSocket::run() {
 	buffer = ::malloc(BUFFER_SIZE);
 	while(1) {
 		buffer_lock.lock();
+		std::cerr << "lock()\n";
 		buffer_size=::recv(_d,buffer,BUFFER_SIZE,0);
+		std::cerr << "recv()\n";
 		if (buffer_size>0) {
 			buffer_pos = 0;
 			emit readyRead();

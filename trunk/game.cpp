@@ -134,8 +134,7 @@ void Game::playerRetired()
 			//winner(players[currplayer]);
 			int msp=0;
 			for(int p=1;p<players.size();++p)
-				if ((players[p]->getScore()>players[msp]->getScore())||
-				   ((dynamic_cast<LocalPlayer*>(players[p]))&&(players[p]->getScore()==players[msp]->getScore()))) msp=p;
+				if ((players[p]->getScore()>players[msp]->getScore())) msp=p;
 			winner(players[msp]);
 		} else
 		{

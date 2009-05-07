@@ -1,7 +1,7 @@
 #include "server.h"
 #define MAGIC_NUMBER	110807
 #define PING_INTERVAL	5000
-#define PING_TIME		15000		
+#define PING_TIME		1500000
 
 void Server::readyReadUDP() {
 	if (listener.hasPendingDatagrams()) {

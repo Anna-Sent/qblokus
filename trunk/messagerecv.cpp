@@ -17,12 +17,18 @@ MessageReceiver::MessageReceiver(TCPSocket* socket) {
 }
 
 void MessageReceiver::readyRead() {
+	std::cerr << "readyRead()\n";
 	int avail = socket->bytesAvailable();
+	std::cerr << "avail " << avail << "\n";
 	char *tmp = (char*)malloc(avail);
 	int len = socket->read(tmp,avail);
+	std::cerr << "len " << len << "\n";
 	buffer.append(QByteArray(tmp,len));
+	std::cerr << "buffer " << buffer.size() << "\n";
+	std::cerr << current->getLength() << std::endl;
 	while (current->getLength()<=buffer.size())
 	{
+		std::cerr << current->getLength() << std::endl;
 		current->fill(buffer);
 		{
 			ChatMessage *msg;
@@ -101,28 +107,40 @@ void MessageHeader::fill(const QByteArray& buffer) {
 Message* MessageHeader::next() const {
 	switch(type) {
 		case (mtHeader):
+			std::cerr << "Header\n";
 			return new MessageHeader;
 		case (mtChat):
+			std::cerr << "Chat\n";	
 			return new ChatMessage(*this);
 		case (mtPlayersList):
+			std::cerr << "List\n";		
 			return new PlayersListMessage(*this);
 		case (mtClientConnect):
+			std::cerr << "Connect\n";			
 			return new ClientConnectMessage(*this);
 		case (mtClientDisconnect):
+			std::cerr << "DisConnect\n";				
 			return new ClientDisconnectMessage(*this);
 		case (mtServerReady):
+			std::cerr << "SReady\n";					
 			return new ServerReadyMessage(*this);
 		case (mtConnectionAccepted):
+			std::cerr << "Accepted\n";	
 			return new ConnectionAcceptedMessage(*this);
 		case (mtPing):
+			std::cerr << "Ping\n";	
 			return new PingMessage(*this);
 		case (mtTryToConnect):
+			std::cerr << "TryToConnect\n";		
 			return new TryToConnectMessage(*this);
 		case (mtStartGame):
+			std::cerr << "Start\n";	
 			return new StartGameMessage(*this);
 		case (mtTurn):
+			std::cerr << "Turn\n";	
 			return new TurnMessage(*this);
 		case (mtSurrender):
+			std::cerr << "Surrender\n";
 			return new SurrenderMessage(*this);
 		default:
 			return NULL;
