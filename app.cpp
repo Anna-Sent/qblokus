@@ -269,6 +269,8 @@ void App::localRestartGameMessageReceive(RestartGameMessage msg) {
 	if (game) {
 		delete game;
 		game=new Game(this);
+		connect(game, SIGNAL(turnDone(QString,QColor,QString,int,int,int)), &localClient, SLOT(turnDone(QString,QColor,QString,int,int,int)));
+		connect(game, SIGNAL(playerRetired(QString, QColor)), &localClient, SLOT(playerSurrendered(QString,QColor)));
 		QList<ClientInfo> list = msg.getList();
 		QList<bool> isLocal;
 		for (int i=0;i<list.size();++i)

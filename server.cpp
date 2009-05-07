@@ -69,9 +69,8 @@ void Server::stop() {
 		serverConnection.close();
 		listener.close();
 		timer.stop();
-		while (clients.size()>0) {
+		while (clients.size()>0)
 			removeClient(0);
-		}
 		clients.clear();
 	}
 }
