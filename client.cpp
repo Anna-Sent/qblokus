@@ -55,7 +55,7 @@ LocalClient::LocalClient():lastpingtime(QTime::currentTime()) {
 	qRegisterMetaType<ConnectionAcceptedMessage>("ConnectionAcceptedMessage");
 	qRegisterMetaType<PingMessage>("PingMessage");
 	qRegisterMetaType<StartGameMessage>("StartGameMessage");
-	qRegisterMetaType<StartGameMessage>("RestartGameMessage");
+	qRegisterMetaType<RestartGameMessage>("RestartGameMessage");
 	qRegisterMetaType<TurnMessage>("TurnMessage");
 	qRegisterMetaType<ClientDisconnectMessage>("ClientDisconnectMessage");
 	qRegisterMetaType<SurrenderMessage>("SurrenderMessage");
