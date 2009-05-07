@@ -82,7 +82,7 @@ public:
 	MessageReceiver* receiver;
 	ClientInfo info;
 public:
-	~RemoteClient() { delete receiver; socket->deleteLater(); }
+	~RemoteClient() { delete receiver; }
 	RemoteClient(TCPSocket*);
 private slots:
 	void remoteChatMessageReceive(ChatMessage);
