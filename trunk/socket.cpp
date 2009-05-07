@@ -19,7 +19,6 @@ TCPSocket::TCPSocket() {
 
 TCPSocket::TCPSocket(int descriptor) {
 	_d=descriptor;
-	std::cerr << "accepted socket " << _d << endl;
 	start();
 }
 
@@ -74,7 +73,6 @@ void TCPSocket::disconnectFromHost () {
 
 void TCPSocket::close() {
 	if (_d > 0) {
-		std::cerr << "closing socket " << _d << endl;
 		::shutdown(_d,2);
 		::close(_d);
 		_d = 0;
@@ -113,7 +111,6 @@ bool TCPSocket::doConnect() {
 		emit error();
 		return false;
 	}
-	std::cerr << "connected socket " << _d << endl;
 	emit connected();
 	return true;
 }
@@ -123,7 +120,6 @@ void TCPSocket::run() {
 	if (_d==0) connected=doConnect();
 	if (!connected) return;
 	buffer = ::malloc(BUFFER_SIZE);
-//blocking loop
 	while(1) {
 		buffer_lock.lock();
 		buffer_size=::recv(_d,buffer,BUFFER_SIZE,0);
@@ -133,7 +129,6 @@ void TCPSocket::run() {
 		} else {
 			if (_d!=0)
 				emit error();
-			cerr << "end client loop" << endl;
 			buffer_lock.unlock();
 			return;
 		}
@@ -159,7 +154,6 @@ void TCPServer::close() {
 		::close(_d);
 		_d = 0;
 		_queue.clear();
-		cerr << "close server socket" << endl;
 	}
 }
 
@@ -174,9 +168,7 @@ bool TCPServer::isListening() const {
 bool TCPServer::listen(qint16 port) {
 	if (_d>0) return false;
 	_port = port;
-	cerr << _port << endl;
 	if (!doConnect()) return false;
-	cerr << _port << endl;
 	_queue.clear();
 	start();
 	return true;
@@ -224,7 +216,6 @@ void TCPServer::run() {
 			incomingConnection(d);
 		sleep(1);
 	}
-	cerr<<"end server loop"<<endl;
 }
 
 bool TCPServer::doConnect() {
@@ -242,7 +233,6 @@ bool TCPServer::doConnect() {
 	}
 	int on = 1;
 	if (::ioctl(_d, FIONBIO, (char*)&on) < 0) { // set non-blocking socket
-		::perror("ioctl() failed");
 		::close(_d);
 		_d = 0;
 		return false;

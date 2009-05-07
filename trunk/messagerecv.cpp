@@ -26,80 +26,58 @@ void MessageReceiver::readyRead() {
 		current->fill(buffer);
 		{
 			ChatMessage *msg;
-			if ((msg=dynamic_cast<ChatMessage*>(current))) {
+			if ((msg=dynamic_cast<ChatMessage*>(current)))
 					emit chatMessageReceive(*msg);
-					//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			PlayersListMessage *msg;
-			if ((msg=dynamic_cast<PlayersListMessage*>(current))) {
+			if ((msg=dynamic_cast<PlayersListMessage*>(current)))
 				emit playersListMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			ClientConnectMessage *msg;
-			if ((msg=dynamic_cast<ClientConnectMessage*>(current))) {
+			if ((msg=dynamic_cast<ClientConnectMessage*>(current)))
 				emit clientConnectMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			TryToConnectMessage *msg;
-			if ((msg=dynamic_cast<TryToConnectMessage*>(current))) {
+			if ((msg=dynamic_cast<TryToConnectMessage*>(current)))
 				emit tryToConnectMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			ClientDisconnectMessage *msg;
-			if ((msg=dynamic_cast<ClientDisconnectMessage*>(current))) {
+			if ((msg=dynamic_cast<ClientDisconnectMessage*>(current)))
 				emit clientDisconnectMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			ServerReadyMessage *msg;
-			if ((msg=dynamic_cast<ServerReadyMessage*>(current))) {
+			if ((msg=dynamic_cast<ServerReadyMessage*>(current)))
 				emit serverReadyMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			ConnectionAcceptedMessage *msg;
-			if ((msg=dynamic_cast<ConnectionAcceptedMessage*>(current))) {
+			if ((msg=dynamic_cast<ConnectionAcceptedMessage*>(current)))
 				emit connectionAcceptedMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			PingMessage *msg;
-			if ((msg=dynamic_cast<PingMessage*>(current))) {
+			if ((msg=dynamic_cast<PingMessage*>(current)))
 				emit pingMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			StartGameMessage *msg;
-			if ((msg=dynamic_cast<StartGameMessage*>(current))) {
+			if ((msg=dynamic_cast<StartGameMessage*>(current)))
 				emit startGameMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			TurnMessage *msg;
-			if ((msg=dynamic_cast<TurnMessage*>(current))) {
+			if ((msg=dynamic_cast<TurnMessage*>(current)))
 				emit turnMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 		{
 			SurrenderMessage *msg;
-			if ((msg=dynamic_cast<SurrenderMessage*>(current))) {
+			if ((msg=dynamic_cast<SurrenderMessage*>(current)))
 				emit surrenderMessageReceive(*msg);
-				//emit getMessage(msg->serialize());
-			}
 		}
 
 		buffer.remove(0,current->getLength());
@@ -129,7 +107,6 @@ Message* MessageHeader::next() const {
 		case (mtPlayersList):
 			return new PlayersListMessage(*this);
 		case (mtClientConnect):
-			std::cerr << "clconnmess created\n";
 			return new ClientConnectMessage(*this);
 		case (mtClientDisconnect):
 			return new ClientDisconnectMessage(*this);
@@ -255,7 +232,7 @@ TurnMessage::TurnMessage(QString name, QColor color,QString tile, int id, int x,
 }
 
 QByteArray TurnMessage::serialize() const {
-	QByteArray result = info.serialize();//ClientMessage::serialize();
+	QByteArray result = info.serialize();
 	result.append(QByteArray::fromRawData((const char*)&id,sizeof(int)));
 	result.append(QByteArray::fromRawData((const char*)&x,sizeof(int)));
 	result.append(QByteArray::fromRawData((const char*)&y,sizeof(int)));
@@ -295,13 +272,10 @@ ConnectionAcceptedMessage::ConnectionAcceptedMessage(int errorCode) {
 
 QByteArray ConnectionAcceptedMessage::serialize() const {
 	QByteArray result = QByteArray::fromRawData((const char*)(&errorCode), sizeof(int));
-	std::cerr << "created: " << errorCode << endl;
 	return header.serialize().append(result);
 }
 
 void ConnectionAcceptedMessage::fill(const QByteArray& buffer) {
 	const char* data = buffer.data();
-	//errorCode = *((int*)data);
 	::bcopy(data, (void*)(&errorCode), sizeof(int));
-	std::cerr << "accepted: " << errorCode << endl;
 }

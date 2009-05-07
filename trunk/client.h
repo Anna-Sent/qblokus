@@ -3,19 +3,19 @@
 #include "socket.h"
 #include "udpsocket.h"
 #include "messagerecv.h"
-//#include <iostream>
 #include <QTimer>
 #include <QTime>
 #include <QObject>
 #include <QThread>
-//using namespace std;
+#include <iostream>
+using namespace std;
 
 class LocalClient : public QThread {
 	Q_OBJECT
 private:
 	QTimer localtimer;
 private:
-	QTime lastpingtime; // for remote and local client
+	QTime lastpingtime;
 	TCPSocket* socket;
 	MessageReceiver* receiver;
 	ClientInfo info;
@@ -23,14 +23,14 @@ private:
 public:
 	~LocalClient() { delete receiver; socket->deleteLater(); }
 	LocalClient();
-	void start(QString hostname, quint16 port) {socket->connectToHost(hostname, port);localtimer.start();QThread::start();}
+	void start(QString hostname, quint16 port) {socket->connectToHost(hostname, port);localtimer.start();QThread::start();cerr<<"client started"<<endl;}
 	void setNickname(QString name) {info.name=name;}
 	void setColor(QColor color) {info.color=color;}
 	QString getNickname() {return info.name;}
 	QColor getColor() {return info.color;}
 	bool isConnected() {return socket->isConnected();}
 protected:
-	void run() {exec();stop();}
+	void run() {exec();cerr<<"client exec"<<endl;stop();cerr<<"client stopped"<<endl;}
 private slots:
 	void localChatMessageReceive(ChatMessage);
 	void localPlayersListMessageReceive(PlayersListMessage);
@@ -54,11 +54,9 @@ private slots:
 signals:
 	void lcChatMessageReceive(ChatMessage);
 	void lcPlayersListMessageReceive(PlayersListMessage);
-	//void lcServerReadyMessageReceive(ServerReadyMessage);
 	void lcClientConnectMessageReceive(ClientConnectMessage);
 	void lcClientDisconnectMessageReceive(ClientDisconnectMessage);
 	void lcConnectionAcceptedMessageReceive(ConnectionAcceptedMessage);
-	//void lcPingMessageReceive(PingMessage);
 	void lcStartGameMessageReceive(StartGameMessage);
 	void lcTurnMessageReceive(TurnMessage);
 	void lcSurrenderMessageReceive(SurrenderMessage);
@@ -70,8 +68,8 @@ signals:
 class RemoteClient : public QObject {
 	Q_OBJECT
 public:
-	int state; // for remote client
-	QTime lastpingtime; // for remote and local client
+	int state;
+	QTime lastpingtime;
 	TCPSocket* socket;
 	MessageReceiver* receiver;
 	ClientInfo info;
