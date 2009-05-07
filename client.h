@@ -10,7 +10,15 @@
 #include <iostream>
 using namespace std;
 
-class LocalClient : public QThread {
+class LCWrapper : public QThread {
+	protected:
+		void run()
+		{
+			exec();
+		}
+};
+
+class LocalClient: public QObject {
 	Q_OBJECT
 private:
 	QTimer localtimer;
@@ -22,15 +30,16 @@ private:
 	void stop() {socket->close();localtimer.stop();}
 public:
 	~LocalClient() { delete receiver; socket->deleteLater(); }
+	void quit() {stop();}
 	LocalClient();
-	void start(QString hostname, quint16 port) {socket->connectToHost(hostname, port);localtimer.start();QThread::start();cerr<<"client started"<<endl;}
+	void start(QString hostname, quint16 port) {socket->connectToHost(hostname, port);localtimer.start();cerr<<"client started"<<endl;}
 	void setNickname(QString name) {info.name=name;}
 	void setColor(QColor color) {info.color=color;}
 	QString getNickname() {return info.name;}
 	QColor getColor() {return info.color;}
 	bool isConnected() {return socket->isConnected();}
-protected:
-	void run() {exec();cerr<<"client exec"<<endl;stop();cerr<<"client stopped"<<endl;}
+/*protected:
+	void run() {exec();cerr<<"client exec"<<endl;stop();cerr<<"client stopped"<<endl;}*/
 private slots:
 	void localChatMessageReceive(ChatMessage);
 	void localPlayersListMessageReceive(PlayersListMessage);

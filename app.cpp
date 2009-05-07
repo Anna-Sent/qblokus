@@ -161,7 +161,8 @@ App::App(QWidget *parent) {
 	
 	connect(this, SIGNAL(startGame()), &server, SLOT(startGame()));
 	connect(this, SIGNAL(sendMessage(QString)), &localClient, SLOT(sendMessage(QString)));
-	
+	localClient.moveToThread(&lcw);
+	lcw.start();
 	dialog = new OptDialog(this);
 	dialog->show();
 }
@@ -214,7 +215,9 @@ void App::le_sendMessage() {
 }
 //===============================LocalClient slots========================================
 void App::localSurrenderMessageReceive(SurrenderMessage msg) {
+	std::cerr << "in retired\n";
 	game->remotePlayerRetired(msg.getName(),msg.getColor());
+	std::cerr << "out retired\n";
 }
 
 void App::localStartGameMessageReceive(StartGameMessage msg) {

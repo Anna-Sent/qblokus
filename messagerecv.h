@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QByteArray>
 #include <QString>
+#include <QMetaType>
 #include "clientinfo.h"
 
 enum MessageType { mtHeader, mtChat, mtPlayersList,
@@ -49,6 +50,7 @@ class ChatMessage : public ComplexMessage {
 		QString text;
 		ClientInfo info;
 	public:
+		ChatMessage() {}
 		ChatMessage(const MessageHeader& header);
 		QString getName() const {return info.name;}
 		QString getText() const {return text;}
@@ -62,6 +64,7 @@ class PlayersListMessage : public ComplexMessage {
 	private:
 		QList<ClientInfo> list;
 	public:
+		PlayersListMessage() {}
 		PlayersListMessage(const MessageHeader& header);
 		QList<ClientInfo> getList() const {return list;}
 		PlayersListMessage(QList<ClientInfo>);
@@ -88,12 +91,14 @@ class TryToConnectMessage : public ClientMessage {
 
 class ClientConnectMessage : public ClientMessage {
 	public:
+		ClientConnectMessage() {}
 		ClientConnectMessage(const MessageHeader& header) {this->header=header;}
 		ClientConnectMessage(QString, QColor);
 };
 
 class ClientDisconnectMessage : public ClientMessage {
 	public:
+		ClientDisconnectMessage() {}
 		ClientDisconnectMessage(const MessageHeader& header) {this->header=header;}
 		ClientDisconnectMessage(QString, QColor);
 };
@@ -104,6 +109,7 @@ class ServerReadyMessage : public ComplexMessage {
 		ServerReadyMessage(const MessageHeader& header) {this->header=header;}
 		ServerReadyMessage() { header.len = 0; header.type = mtServerReady;}
 };
+
 
 class PingMessage : public ComplexMessage {
 	private:
@@ -116,6 +122,7 @@ class ConnectionAcceptedMessage : public ComplexMessage {
 	private:
 		int errorCode;
 	public:
+		ConnectionAcceptedMessage() {};
 		ConnectionAcceptedMessage(const MessageHeader& header) {this->header=header;}
 		ConnectionAcceptedMessage(int errorCode);
 		QByteArray serialize() const;
@@ -135,6 +142,7 @@ private:
 	int id, x, y;
 	QString mask;
 public:
+	TurnMessage() {}
 	TurnMessage(const MessageHeader& header) {this->header=header;}
 	TurnMessage(QString, QColor, QString,int id, int x, int y);
 	int getX() const {return x;}
@@ -147,6 +155,7 @@ public:
 
 class SurrenderMessage : public ClientMessage {
 	public:
+		SurrenderMessage() {}
 		SurrenderMessage(QString name, QColor color)
 		{
 			info.name=name;
@@ -158,7 +167,6 @@ class SurrenderMessage : public ClientMessage {
 		{
 			this->header=header;
 		}
-		
 };
 
 class MessageReceiver : public QObject {
