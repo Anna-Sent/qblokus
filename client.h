@@ -12,8 +12,7 @@ using namespace std;
 
 class LCWrapper : public QThread {
 	protected:
-		void run()
-		{
+		void run() {
 			exec();
 		}
 };
@@ -29,7 +28,7 @@ private:
 	ClientInfo info;
 	void stop() {socket->close();localtimer.stop();}
 public:
-	~LocalClient() { delete receiver; socket->deleteLater(); }
+	~LocalClient() { delete receiver; }
 	void quit() {stop();}
 	LocalClient();
 	void start(QString hostname, quint16 port) {socket->connectToHost(hostname, port);localtimer.start();cerr<<"client started"<<endl;}
@@ -38,8 +37,6 @@ public:
 	QString getNickname() {return info.name;}
 	QColor getColor() {return info.color;}
 	bool isConnected() {return socket->isConnected();}
-/*protected:
-	void run() {exec();cerr<<"client exec"<<endl;stop();cerr<<"client stopped"<<endl;}*/
 private slots:
 	void localChatMessageReceive(ChatMessage);
 	void localPlayersListMessageReceive(PlayersListMessage);
@@ -49,6 +46,7 @@ private slots:
 	void localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage);
 	void localPingMessageReceive(PingMessage);
 	void localStartGameMessageReceive(StartGameMessage);
+	void localRestartGameMessageReceive(RestartGameMessage);
 	void localTurnMessageReceive(TurnMessage);
 	void localSurrenderMessageReceive(SurrenderMessage);
 	void localConnected();
@@ -67,6 +65,7 @@ signals:
 	void lcClientDisconnectMessageReceive(ClientDisconnectMessage);
 	void lcConnectionAcceptedMessageReceive(ConnectionAcceptedMessage);
 	void lcStartGameMessageReceive(StartGameMessage);
+	void lcRestartGameMessageReceive(RestartGameMessage);
 	void lcTurnMessageReceive(TurnMessage);
 	void lcSurrenderMessageReceive(SurrenderMessage);
 	void lcConnected();

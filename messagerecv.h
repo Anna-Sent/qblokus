@@ -10,7 +10,8 @@
 
 enum MessageType { mtHeader, mtChat, mtPlayersList,
 	mtClientConnect, mtClientDisconnect, mtServerReady,
-	mtConnectionAccepted, mtPing, mtTryToConnect, mtStartGame, mtTurn, mtSurrender };
+	mtConnectionAccepted, mtPing, mtTryToConnect,
+	mtStartGame, mtRestartGame, mtTurn, mtSurrender };
 
 class TCPSocket;
 class UDPSocket;
@@ -61,7 +62,7 @@ class ChatMessage : public ComplexMessage {
 };
 
 class PlayersListMessage : public ComplexMessage {
-	private:
+	protected:
 		QList<ClientInfo> list;
 	public:
 		PlayersListMessage() {}
@@ -70,6 +71,13 @@ class PlayersListMessage : public ComplexMessage {
 		PlayersListMessage(QList<ClientInfo>);
 		QByteArray serialize() const;
 		void fill(const QByteArray&);
+};
+
+class RestartGameMessage : public PlayersListMessage {
+	public:
+		RestartGameMessage() {}
+		RestartGameMessage(const MessageHeader& header);
+		RestartGameMessage(QList<ClientInfo>);
 };
 
 class ClientMessage : public ComplexMessage {
@@ -177,12 +185,14 @@ class MessageReceiver : public QObject {
 		QByteArray buffer;
 	public:
 		MessageReceiver(TCPSocket*);
+		~MessageReceiver();
 		TCPSocket* getSocket() {return socket;}
 	public slots:
 		void readyRead();
 	signals:
 		void chatMessageReceive(ChatMessage);
 		void playersListMessageReceive(PlayersListMessage);
+		void restartGameMessageReceive(RestartGameMessage);
 		void tryToConnectMessageReceive(TryToConnectMessage);
 		void clientConnectMessageReceive(ClientConnectMessage);
 		void clientDisconnectMessageReceive(ClientDisconnectMessage);

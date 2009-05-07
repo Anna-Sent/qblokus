@@ -31,9 +31,6 @@ void OptDialog::connectBtnClicked() {
 		pbSearch->setText("Start search");
 		sbPort->setDisabled(false);
 	}
-	textEdit->clear();
-	lwServersList->clear();
-	servers.clear();
 	switch (comboBox->currentIndex()) {
 		case 0: app->localClient.setColor(Qt::red); break;
 		case 1: app->localClient.setColor(Qt::darkYellow); break;
@@ -59,6 +56,9 @@ void OptDialog::connectBtnClicked() {
 			QMessageBox::warning(this, "Error", "Enter host name");
 			return;
 		}
+		textEdit->clear();
+		lwServersList->clear();
+		servers.clear();
 		close();
 		app->game = new Game(app);
 		//game signals
@@ -71,6 +71,9 @@ void OptDialog::connectBtnClicked() {
 		int maxClientsCount = sbClientsCount->value();
 		bool listening = app->server.start(maxClientsCount,port);
 		if (listening) {
+			textEdit->clear();
+			lwServersList->clear();
+			servers.clear();
 			close();
 			app->game = new Game(app);
 			//game signals
@@ -147,6 +150,7 @@ App::App(QWidget *parent) {
 	connect(&localClient, SIGNAL(lcClientDisconnectMessageReceive(ClientDisconnectMessage)), this, SLOT(localClientDisconnectMessageReceive(ClientDisconnectMessage)));
 	connect(&localClient, SIGNAL(lcConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)), this, SLOT(localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)));
 	connect(&localClient, SIGNAL(lcStartGameMessageReceive(StartGameMessage)), this, SLOT(localStartGameMessageReceive(StartGameMessage)));
+	connect(&localClient, SIGNAL(lcRestartGameMessageReceive(RestartGameMessage)), this, SLOT(localRestartGameMessageReceive(RestartGameMessage)));
 	connect(&localClient, SIGNAL(lcTurnMessageReceive(TurnMessage)), this, SLOT(localTurnMessageReceive(TurnMessage)));
 	connect(&localClient, SIGNAL(lcSurrenderMessageReceive(SurrenderMessage)), this, SLOT(localSurrenderMessageReceive(SurrenderMessage)));
 	connect(&localClient, SIGNAL(lcConnected()), this, SLOT(localConnected()));
@@ -160,6 +164,7 @@ App::App(QWidget *parent) {
 	connect(lineEdit, SIGNAL(returnPressed()), lineEdit, SLOT(clear()));
 	
 	connect(this, SIGNAL(startGame()), &server, SLOT(startGame()));
+	connect(this, SIGNAL(restartGame(QList<ClientInfo>)), &server, SLOT(restartGame(QList<ClientInfo>)));
 	connect(this, SIGNAL(sendMessage(QString)), &localClient, SLOT(sendMessage(QString)));
 	localClient.moveToThread(&lcw);
 	lcw.start();
@@ -186,8 +191,33 @@ App::~App() {
 void App::a_startGame() {
 	if (server.isRunning()) {
 		if (server.getPlayersCount()==server.getMaxClientsCount()) {
-			game->start();
-			emit startGame();
+			if (game) {
+				if (game->isStarted()) {
+					QMessageBox msgBox;
+					msgBox.setText(QString::fromUtf8("Новая игра"));
+					msgBox.setInformativeText(QString::fromUtf8("Начать новую игру?"));
+					msgBox.setStandardButtons(QMessageBox::Yes|QMessageBox::No);
+					msgBox.setDefaultButton(QMessageBox::No);
+					msgBox.setIcon(QMessageBox::Warning);
+					int ret = msgBox.exec();
+					switch(ret) {
+						case(QMessageBox::No): return;
+						case(QMessageBox::Yes): break;
+					}
+					delete game;
+					game=new Game(this);
+					QList<ClientInfo> list = server.getClients();
+					QList<bool> isLocal;
+					for (int i=0;i<list.size();++i)
+						isLocal.append(list[i].name==localClient.getNickname()&&list[i].color==localClient.getColor());
+					game->updatePlayers(list,isLocal);
+					game->start();
+					emit restartGame(list);
+				} else {
+					game->start();
+					emit startGame();
+				}
+			}
 		} else
 			QMessageBox::warning(this, "Warning", "Wait for "+QString::number(server.getMaxClientsCount())+" players");
 	} else
@@ -199,6 +229,19 @@ void App::a_exit() {
 }
 
 void App::a_disconnectFromServer() {
+	if (game&&game->isStarted()) {
+		QMessageBox msgBox;
+		msgBox.setText(QString::fromUtf8("Отключение"));
+		msgBox.setInformativeText(QString::fromUtf8("Выйти в диалог верхнего уровня?"));
+		msgBox.setStandardButtons(QMessageBox::Yes|QMessageBox::No);
+		msgBox.setDefaultButton(QMessageBox::No);
+		msgBox.setIcon(QMessageBox::Warning);
+		int ret = msgBox.exec();
+		switch(ret) {
+			case(QMessageBox::No): return;
+			case(QMessageBox::Yes): break;
+		}
+	}
 	localClient.quit();
 	server.quit();
 	close();
@@ -215,13 +258,24 @@ void App::le_sendMessage() {
 }
 //===============================LocalClient slots========================================
 void App::localSurrenderMessageReceive(SurrenderMessage msg) {
-	std::cerr << "in retired\n";
 	game->remotePlayerRetired(msg.getName(),msg.getColor());
-	std::cerr << "out retired\n";
 }
 
 void App::localStartGameMessageReceive(StartGameMessage msg) {
 	game->start();
+}
+
+void App::localRestartGameMessageReceive(RestartGameMessage msg) {
+	if (game) {
+		delete game;
+		game=new Game(this);
+		QList<ClientInfo> list = msg.getList();
+		QList<bool> isLocal;
+		for (int i=0;i<list.size();++i)
+			isLocal.append(list[i].name==localClient.getNickname()&&list[i].color==localClient.getColor());
+		game->updatePlayers(list,isLocal);
+		game->start();
+	}
 }
 
 void App::localTurnMessageReceive(TurnMessage msg) {
@@ -268,11 +322,11 @@ void App::localConnected() {
 void App::localDisconnected() {
 	pinfo("Disconnected");
 	listWidget->clear();
-	delete game;
+	if (game) {delete game;game=NULL;}
 }
 
 void App::localError(QString msg) {
-	perror("local error "+msg);
+	perror("Local error: "+msg);
 	localClient.quit();
 	server.quit();
 }
