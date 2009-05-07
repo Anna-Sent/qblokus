@@ -198,6 +198,7 @@ void Game::clear() {
 void Game::start()
 {
 	if (running) return;
+	if (players.size()==0) return;
 	QPushButton *surrender = widget->findChild<QPushButton*>(QString("btnSurrender"));
 	if (dynamic_cast<LocalPlayer*>(players[currplayer]))
 	{
