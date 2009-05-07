@@ -3,6 +3,14 @@
 #define PING_INTERVAL	5000
 #define PING_TIME		1500000
 
+QList<ClientInfo> Server::getClients() const {
+	QList<ClientInfo> list;
+	for (int i=0;i<clients.size();++i)
+		if (clients[i]->socket->isConnected()&&clients[i]->state==2)
+			list.append(clients[i]->info);
+	return list;
+}
+
 void Server::readyReadUDP() {
 	if (listener.hasPendingDatagrams()) {
 		qint64 datagramSize = listener.pendingDatagramSize();
@@ -47,16 +55,13 @@ bool Server::start(int maxClientsCount, quint16 port) {
 		timer.start();
 		listener.bind(INADDR_ANY, port);
 		QThread::start();
-		cerr<<"server started"<<endl;
 	}
 	return listening;
 }
 
 void Server::run() {
 	exec();
-	cerr<<"server exec"<<endl;
 	stop();
-	cerr<<"server stopped"<<endl;
 }
 
 void Server::stop() {
@@ -78,7 +83,6 @@ void Server::ping() {
 			msg.send(clients[i]->socket);
 			QTime last = clients[i]->lastpingtime;
 			int elapsed = last.elapsed();
-			cerr<<"server: elapsed "<<elapsed<<endl;
 			if (elapsed > PING_TIME) {
 				clients[i]->socket->close();
 			}
@@ -157,7 +161,6 @@ void Server::sendToAll(Message *msg) {
 		}
 }
 
-
 void Server::sendPlayersList() {
 	QList<ClientInfo> list;
 	for (int i=0;i<clients.size();++i)
@@ -169,5 +172,10 @@ void Server::sendPlayersList() {
 
 void Server::startGame() {
 	StartGameMessage msg;
+	sendToAll(&msg);
+}
+
+void Server::restartGame(QList<ClientInfo> list) {
+	RestartGameMessage msg(list);
 	sendToAll(&msg);
 }

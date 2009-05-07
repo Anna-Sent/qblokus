@@ -62,10 +62,12 @@ public slots:
 	// game signals
 	void localTurnMessageReceive(TurnMessage);
 	void localStartGameMessageReceive(StartGameMessage);
+	void localRestartGameMessageReceive(RestartGameMessage);
 	void localSurrenderMessageReceive(SurrenderMessage);
 signals:
 	// to server
 	void startGame();
+	void restartGame(QList<ClientInfo>);
 	// to client
 	void sendMessage(QString);
 	void tolcTurnDone(QString name,QColor color,QString tile,int id,int x,int y);

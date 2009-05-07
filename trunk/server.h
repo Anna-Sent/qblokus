@@ -17,9 +17,10 @@ private:
 public:
 	int getMaxClientsCount() {return maxClientsCount;}
 	Server();
-	QString getErrorString() {return serverConnection.errorString();}
-	int getPlayersCount() {int count = 0;for(int i=0;i<clients.size();++i) if (clients[i]->state==2&&clients[i]->socket->isConnected()) ++count;return count;}
+	QString getErrorString() const {return serverConnection.errorString();}
+	int getPlayersCount() const {int count = 0;for(int i=0;i<clients.size();++i) if (clients[i]->state==2&&clients[i]->socket->isConnected()) ++count;return count;}
 	bool start(int maxClientsCount, quint16 port);
+	QList<ClientInfo> getClients() const;
 private:
 	void stop();
 	void sendPlayersList();
@@ -30,6 +31,7 @@ protected:
 private slots:
 	//from app
 	void startGame();
+	void restartGame(QList<ClientInfo>);
 	//from timer
 	void ping();
 	//from udpsocket

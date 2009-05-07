@@ -49,18 +49,18 @@ LocalClient::LocalClient():lastpingtime(QTime::currentTime()) {
 	connect(&localtimer, SIGNAL(timeout()), this, SLOT(localTimerCheck()));
 	socket = new TCPSocket;
 	receiver = new MessageReceiver(socket);
-	connect(receiver, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(localChatMessageReceive(ChatMessage)));
 	qRegisterMetaType<PlayersListMessage>("PlayersListMessage");
 	qRegisterMetaType<ClientConnectMessage>("ClientConnectMessage");
 	qRegisterMetaType<ServerReadyMessage>("ServerReadyMessage");
 	qRegisterMetaType<ConnectionAcceptedMessage>("ConnectionAcceptedMessage");
 	qRegisterMetaType<PingMessage>("PingMessage");
 	qRegisterMetaType<StartGameMessage>("StartGameMessage");
+	qRegisterMetaType<StartGameMessage>("RestartGameMessage");
 	qRegisterMetaType<TurnMessage>("TurnMessage");
 	qRegisterMetaType<ClientDisconnectMessage>("ClientDisconnectMessage");
 	qRegisterMetaType<SurrenderMessage>("SurrenderMessage");
 	qRegisterMetaType<ChatMessage>("ChatMessage");
-
+	connect(receiver, SIGNAL(chatMessageReceive(ChatMessage)), this, SLOT(localChatMessageReceive(ChatMessage)));
 	connect(receiver, SIGNAL(playersListMessageReceive(PlayersListMessage)), this, SLOT(localPlayersListMessageReceive(PlayersListMessage)));
 	connect(receiver, SIGNAL(serverReadyMessageReceive(ServerReadyMessage)), this, SLOT(localServerReadyMessageReceive(ServerReadyMessage)));
 	connect(receiver, SIGNAL(clientConnectMessageReceive(ClientConnectMessage)), this, SLOT(localClientConnectMessageReceive(ClientConnectMessage)));
@@ -68,6 +68,7 @@ LocalClient::LocalClient():lastpingtime(QTime::currentTime()) {
 	connect(receiver, SIGNAL(connectionAcceptedMessageReceive(ConnectionAcceptedMessage)), this, SLOT(localConnectionAcceptedMessageReceive(ConnectionAcceptedMessage)));
 	connect(receiver, SIGNAL(pingMessageReceive(PingMessage)), this, SLOT(localPingMessageReceive(PingMessage)));
 	connect(receiver, SIGNAL(startGameMessageReceive(StartGameMessage)), this, SLOT(localStartGameMessageReceive(StartGameMessage)));
+	connect(receiver, SIGNAL(restartGameMessageReceive(RestartGameMessage)), this, SLOT(localRestartGameMessageReceive(RestartGameMessage)));
 	connect(receiver, SIGNAL(turnMessageReceive(TurnMessage)), this, SLOT(localTurnMessageReceive(TurnMessage)));
 	connect(receiver, SIGNAL(surrenderMessageReceive(SurrenderMessage)), this, SLOT(localSurrenderMessageReceive(SurrenderMessage)));
 	connect(socket, SIGNAL(connected()), this, SLOT(localConnected()));
@@ -104,14 +105,16 @@ void LocalClient::localStartGameMessageReceive(StartGameMessage msg) {
 	emit lcStartGameMessageReceive(msg);
 }
 
+void LocalClient::localRestartGameMessageReceive(RestartGameMessage msg) {
+	emit lcRestartGameMessageReceive(msg);
+}
+
 void LocalClient::localTurnMessageReceive(TurnMessage msg) {
 	emit lcTurnMessageReceive(msg);
 }
 
 void LocalClient::localSurrenderMessageReceive(SurrenderMessage msg) {
-	std::cerr << "emit Surrender message\n";
 	emit lcSurrenderMessageReceive(msg);
-	std::cerr << "out emit surr mess\n";
 }
 
 void LocalClient::localConnected() {
@@ -133,8 +136,6 @@ void LocalClient::localPingMessageReceive(PingMessage msg) {
 
 void LocalClient::localTimerCheck() {
 	int elapsed = lastpingtime.elapsed();
-	cerr << "client: elapsed "<<elapsed<<endl;
-	cerr << QTime::currentTime().second() << endl;
 	if (elapsed > PING_TIME)
 		emit lcError(QString::fromUtf8("Проверьте кабель"));
 }
