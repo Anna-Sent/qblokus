@@ -143,10 +143,12 @@ void Server::newConnection() {
 }
 
 void Server::remoteDisconnected(RemoteClient *client) {
-	ClientDisconnectMessage msg(client->info.name, client->info.color);
+	if (client->state==2) {
+		ClientDisconnectMessage msg(client->info.name, client->info.color);
+		sendToAll(&msg);
+		sendPlayersList();
+	}
 	removeClient(client);
-	sendToAll(&msg);
-	sendPlayersList();
 }
 
 void Server::remoteChatMessageReceive(ChatMessage msg, RemoteClient*) {
