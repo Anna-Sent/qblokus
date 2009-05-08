@@ -37,6 +37,7 @@ void Server::remotePingMessageReceive(PingMessage, RemoteClient* client) {
 }
 
 void Server::removeClient(RemoteClient* client) {
+	client->socket->close();
 	clients.removeAt(clients.indexOf(client));
 	client->deleteLater();
 }
@@ -70,7 +71,7 @@ void Server::stop() {
 		listener.close();
 		timer.stop();
 		while (clients.size()>0)
-			removeClient(0);
+			removeClient(clients[0]);
 		clients.clear();
 	}
 }

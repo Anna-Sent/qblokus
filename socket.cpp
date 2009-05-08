@@ -41,7 +41,7 @@ qint64 TCPSocket::bytesAvailable () const {
 }
 
 QString TCPSocket::errorString() const {
-	char* str = strerror(errno);
+	char* str = strerror(errorcode);//errno);
 	int len = strlen(str);
 	return QString::fromUtf8(str,len);
 }
@@ -127,8 +127,10 @@ void TCPSocket::run() {
 			buffer_pos = 0;
 			emit readyRead();
 		} else {
-			if (_d!=0)
+			if (_d!=0) {
+				errorcode=errno;
 				emit error();
+			}
 			buffer_lock.unlock();
 			return;
 		}
