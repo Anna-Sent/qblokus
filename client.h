@@ -31,7 +31,7 @@ public:
 	~LocalClient() { delete receiver; }
 	void quit() {stop();}
 	LocalClient();
-	void start(QString hostname, quint16 port) {socket->connectToHost(hostname, port);localtimer.start();cerr<<"client started"<<endl;}
+	void start(QString hostname, quint16 port) {socket->connectToHost(hostname, port);localtimer.start();}
 	void setNickname(QString name) {info.name=name;}
 	void setColor(QColor color) {info.color=color;}
 	QString getNickname() {return info.name;}
