@@ -41,7 +41,7 @@ qint64 TCPSocket::bytesAvailable () const {
 }
 
 QString TCPSocket::errorString() const {
-	char* str = strerror(errorcode);//errno);
+	char* str = strerror(errorcode);
 	int len = strlen(str);
 	return QString::fromUtf8(str,len);
 }
@@ -50,6 +50,7 @@ qint64 TCPSocket::write ( const char * data, qint64 maxSize ) {
 	write_lock.lock();
 	int len;
 	len=::send(_d,data,maxSize,0);
+	errorcode=errno;
 	if (len==0)
 		emit error();
 	else if (len<0)
@@ -89,16 +90,19 @@ void TCPSocket::close() {
 bool TCPSocket::doConnect() {
 	if ((_d = ::socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		_d = 0;
+		errorcode=errno;
 		emit error();
 		return false;
 	}
 	int optval = 1;
 	if (::setsockopt(_d, SOL_SOCKET, SO_REUSEADDR|SO_KEEPALIVE, &optval, sizeof optval) == -1) {
+		errorcode=errno;
 		emit error();
 		return false;
 	}
 	struct hostent *hp;
 	if ((hp=::gethostbyname(hostName.toUtf8().data()))==0) {
+		errorcode=errno;
 		emit error();
 		return false;
 	}
@@ -108,6 +112,7 @@ bool TCPSocket::doConnect() {
 	_addr.sin_family = hp->h_addrtype;
 	_addr.sin_port = htons(port);
 	if (::connect(_d, (sockaddr*)&_addr, sizeof(_addr)) == -1) {
+		errorcode=errno;
 		emit error();
 		return false;
 	}
