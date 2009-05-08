@@ -27,7 +27,7 @@ class TCPSocket: public QThread
 		QString getHostname() const { return hostName; }
 		quint16 getPort() const { return port; }
 	private:
-		int _d;
+		int _d, errorcode;
 		QString hostName;
 		QMutex buffer_lock;
 		QMutex write_lock;
