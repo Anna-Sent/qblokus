@@ -328,7 +328,7 @@ void App::localDisconnected() {
 }
 
 void App::localError(QString msg) {
-	perror("Local error: "+msg);
+	perror("Local error "+msg);
 	localClient.quit();
 	server.quit();
 }
