@@ -43,7 +43,7 @@ qint64 TCPSocket::bytesAvailable () const {
 QString TCPSocket::errorString() const {
 	char* str = strerror(errorcode);
 	int len = strlen(str);
-	return QString::fromUtf8(str,len);
+	return errorcode!=0?QString::fromUtf8(str,len):"";
 }
 
 qint64 TCPSocket::write ( const char * data, qint64 maxSize ) {
