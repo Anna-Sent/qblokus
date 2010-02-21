@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
+#include <stdio.h>
 #include "udpsocket.h"
 using namespace std;
 
