@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <QMetaType>
 #include "socket.h"
